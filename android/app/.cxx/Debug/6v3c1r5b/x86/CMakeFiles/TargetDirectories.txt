@@ -1,0 +1,2 @@
+C:/Users/scortes/StudioProjects/emmu_tfg/android/app/.cxx/Debug/6v3c1r5b/x86/CMakeFiles/edit_cache.dir
+C:/Users/scortes/StudioProjects/emmu_tfg/android/app/.cxx/Debug/6v3c1r5b/x86/CMakeFiles/rebuild_cache.dir

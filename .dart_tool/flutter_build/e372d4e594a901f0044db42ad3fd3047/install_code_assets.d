@@ -1,0 +1,1 @@
+ C:\\Users\\scortes\\StudioProjects\\emmu_tfg\\.dart_tool\\flutter_build\\e372d4e594a901f0044db42ad3fd3047\\native_assets.json: 
