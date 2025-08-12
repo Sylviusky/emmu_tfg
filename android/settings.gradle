@@ -16,7 +16,7 @@ pluginManagement {
         gradlePluginPortal()
     }
     plugins {
-        id "org.jetbrains.kotlin.android" version "1.7.0" // Asegúrate de que esta línea esté presente y actualizada
+        id "org.jetbrains.kotlin.android" version "2.2.0" // Asegúrate de que esta línea esté presente y actualizada
     }
 }
 
