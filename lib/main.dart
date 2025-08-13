@@ -1,3 +1,5 @@
+
+
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -24,18 +26,13 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-
-  //D/com.google.firebase.appcheck.debug.internal.DebugAppCheckProvider(17408): EmmuTFG Android Emulado:  Enter this debug secret into the allow list in the Firebase Console for your project: e7a3648d-5622-4847-a0cf-4aea3d900627
-  //D/com.google.firebase.appcheck.debug.internal.DebugAppCheckProvider( 4552): AndroidStudio2:  Enter this debug secret into the allow list in the Firebase Console for your project: 87837f2b-c4fc-4d11-a1ac-2d7103c0a7fc
-  //Mi Xiaomi:
-
   FirebaseAnalytics analytics = FirebaseAnalytics.instance;
 
   FirebaseUIAuth.configureProviders([
     EmailAuthProvider(),
     GoogleProvider(
         clientId:
-            '650790578068-cv2q1uh5dqghs0a7o00cvq1qgrnr3m9k.apps.googleusercontent.com'),
+        '650790578068-cv2q1uh5dqghs0a7o00cvq1qgrnr3m9k.apps.googleusercontent.com'),
   ]);
 
   runApp(MyApp());
@@ -53,8 +50,8 @@ Future<void> initializeDefault() async {
   print('Initialized default app $app');
 
   await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.debug,
-    //androidProvider: AndroidProvider.playIntegrity,
+    //androidProvider: AndroidProvider.debug,
+    androidProvider: AndroidProvider.playIntegrity,
   );
 }
 
@@ -70,8 +67,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
         buttonTheme: Theme.of(context).buttonTheme.copyWith(
-              highlightColor: Colors.red,
-            ),
+          highlightColor: Colors.red,
+        ),
         // This is the theme of your application.
         //
         // Try running your application with "flutter run". You'll see the

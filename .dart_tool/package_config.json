@@ -15,7 +15,7 @@
     },
     {
       "name": "async",
-      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/async-2.12.0",
+      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/async-2.13.0",
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
@@ -105,7 +105,7 @@
     },
     {
       "name": "fake_async",
-      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/fake_async-1.3.2",
+      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/fake_async-1.3.3",
       "packageUri": "lib/",
       "languageVersion": "3.3"
     },
@@ -489,13 +489,13 @@
     },
     {
       "name": "intl",
-      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/intl-0.19.0",
+      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/intl-0.20.2",
       "packageUri": "lib/",
-      "languageVersion": "3.0"
+      "languageVersion": "3.3"
     },
     {
       "name": "leak_tracker",
-      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/leak_tracker-10.0.8",
+      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/leak_tracker-10.0.9",
       "packageUri": "lib/",
       "languageVersion": "3.2"
     },
@@ -783,7 +783,7 @@
     },
     {
       "name": "vm_service",
-      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/vm_service-14.3.1",
+      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/vm_service-15.0.0",
       "packageUri": "lib/",
       "languageVersion": "3.3"
     },
@@ -812,10 +812,9 @@
       "languageVersion": "3.3"
     }
   ],
-  "generated": "2025-08-13T17:06:45.284335Z",
   "generator": "pub",
-  "generatorVersion": "3.7.0",
+  "generatorVersion": "3.8.1",
   "flutterRoot": "file:///C:/Users/scortes/flutter",
-  "flutterVersion": "3.29.0",
+  "flutterVersion": "3.32.8",
   "pubCache": "file:///C:/Users/scortes/AppData/Local/Pub/Cache"
 }
