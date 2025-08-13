@@ -54,6 +54,7 @@ class DefaultFirebaseOptions {
     appId: '1:122024969889:android:884418415f0b464b74d2e0',
     messagingSenderId: '122024969889',
     projectId: 'emmu-tfg',
+    databaseURL: 'https://emmu-tfg-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'emmu-tfg.firebasestorage.app',
   );
 
@@ -62,6 +63,7 @@ class DefaultFirebaseOptions {
     appId: '1:122024969889:ios:dd9a2c21856b6bc974d2e0',
     messagingSenderId: '122024969889',
     projectId: 'emmu-tfg',
+    databaseURL: 'https://emmu-tfg-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'emmu-tfg.firebasestorage.app',
     iosBundleId: 'com.emmutfg.emmuTfg',
   );

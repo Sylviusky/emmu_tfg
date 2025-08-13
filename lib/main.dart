@@ -23,10 +23,7 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.debug,
-    //androidProvider: AndroidProvider.playIntegrity,
-  );
+
 
   //D/com.google.firebase.appcheck.debug.internal.DebugAppCheckProvider(17408): EmmuTFG Android Emulado:  Enter this debug secret into the allow list in the Firebase Console for your project: e7a3648d-5622-4847-a0cf-4aea3d900627
   //D/com.google.firebase.appcheck.debug.internal.DebugAppCheckProvider( 4552): AndroidStudio2:  Enter this debug secret into the allow list in the Firebase Console for your project: 87837f2b-c4fc-4d11-a1ac-2d7103c0a7fc
@@ -49,13 +46,19 @@ Future<void> main() async {
   ));
 }
 
+Future<void> initializeDefault() async {
+  FirebaseApp app = await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  print('Initialized default app $app');
+
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: AndroidProvider.debug,
+    //androidProvider: AndroidProvider.playIntegrity,
+  );
+}
+
 class MyApp extends StatelessWidget {
-  Future<void> initializeDefault() async {
-    FirebaseApp app = await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    print('Initialized default app $app');
-  }
 
   MyApp({super.key});
 
