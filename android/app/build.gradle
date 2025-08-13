@@ -6,7 +6,7 @@ plugins {
     id 'com.google.gms.google-services'
     id 'com.google.firebase.firebase-perf'
     id 'com.google.firebase.crashlytics'
-
+    //id 'com.google.secrets_gradle_plugin'
 
 }
 
@@ -14,6 +14,7 @@ def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.newReader('UTF-8'))
+
 }
 
 //def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
@@ -40,7 +41,7 @@ android {
     compileSdk flutter.compileSdkVersion
     //ndkVersion flutter.ndkVersion
 
-
+    buildFeatures.buildConfig = true
 
     defaultConfig {
         applicationId  "com.emmutfg.emmu_tfg"
@@ -48,6 +49,23 @@ android {
         targetSdkVersion localProperties.getProperty("flutter.targetSdkVersion")?.toInteger() ?: 33
         versionCode    localProperties.getProperty("flutter.versionCode")?.toInteger() ?: 1
         versionName    localProperties.getProperty("flutter.versionName") ?: "1.0"
+
+
+        Properties properties = new Properties()
+
+        properties.load(project.rootProject.file("local.properties").newDataInputStream())
+
+        buildConfigField "String", "MAPS_API_KEY", "\"${properties.getProperty("MAPS_API_KEY")}\""
+        buildConfigField "String", "FIREBASE_OPTIONS_ANDROID_API_KEY", "\"${properties.getProperty("FIREBASE_OPTIONS_ANDROID_API_KEY")}\""
+        buildConfigField "String", "FIREBASE_OPTIONS_IOS_API_KEY", "\"${properties.getProperty("FIREBASE_OPTIONS_IOS_API_KEY")}\""
+        buildConfigField "String", "SIGN_IN_CALLBACK_API_KEY", "\"${properties.getProperty("SIGN_IN_CALLBACK_API_KEY")}\""
+        buildConfigField "String", "DEFAULT_FIREBASE_OPTIONS_API_KEY", "\"${properties.getProperty("DEFAULT_FIREBASE_OPTIONS_API_KEY")}\""
+        buildConfigField "String", "TEST_FIREBASE_OPTIONS_ANDROID_API_KEY", "\"${properties.getProperty("TEST_FIREBASE_OPTIONS_ANDROID_API_KEY")}\""
+        buildConfigField "String", "TEST_FIREBASE_OPTIONS_IOS_API_KEY", "\"${properties.getProperty("TEST_FIREBASE_OPTIONS_IOS_API_KEY")}\""
+        buildConfigField "String", "SECONDARY_FIREBASE_OPTIONS_WEB_API_KEY", "\"${properties.getProperty("SECONDARY_FIREBASE_OPTIONS_WEB_API_KEY")}\""
+        buildConfigField "String", "SECONDARY_FIREBASE_OPTIONS_ANDROID_API_KEY", "\"${properties.getProperty("SECONDARY_FIREBASE_OPTIONS_ANDROID_API_KEY")}\""
+        buildConfigField "String", "SECONDARY_FIREBASE_OPTIONS_IOS_API_KEY", "\"${properties.getProperty("SECONDARY_FIREBASE_OPTIONS_IOS_API_KEY")}\""
+
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -125,10 +143,10 @@ dependencies {
     implementation "com.google.firebase:firebase-analytics"
 
     // AndroidX replacements for old support libs
-    implementation "androidx.core:core-ktx:1.10.1"
-    implementation "androidx.appcompat:appcompat:1.6.1"
-    implementation "com.google.android.material:material:1.8.0"
-    implementation "androidx.constraintlayout:constraintlayout:2.1.4"
+    implementation "androidx.core:core-ktx:1.16.0"
+    implementation "androidx.appcompat:appcompat:1.7.1"
+    implementation "com.google.android.material:material:1.12.0"
+    implementation "androidx.constraintlayout:constraintlayout:2.2.1"
 
     // Kotlin stdlib (usually brought in by the plugin)
 

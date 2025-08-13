@@ -73,7 +73,8 @@ class _CartaEventoState extends State<CartaEvento> {
   }
 
   Future<String> getAddressFromGeoPoint(GeoPoint geoPoint) async {
-    final apiKey = 'AIzaSyDTb2UY1JArfhzUKOGEefvDlc-u6Xocqhc';
+    final apiKey =  'AIzaSyDTb2UY1JArfhzUKOGEefvDlc-u6Xocqhc'; //BuildConfig.MAPS_API_KEY;
+    //final apiKey;
     final url =
         'https://maps.googleapis.com/maps/api/geocode/json?latlng=${geoPoint.latitude},${geoPoint.longitude}&key=$apiKey';
 
