@@ -26,6 +26,14 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  //COMENTADO PARA EVITAR PROBLEMAS DE TOKEN CON LA INSTALACIÓN DEL .APK
+  // await FirebaseAppCheck.instance.activate(
+  //   //androidProvider: AndroidProvider.debug,
+  //   //androidProvider: AndroidProvider.playIntegrity,
+  // );
+
+  runApp(MyApp());
+
   FirebaseAnalytics analytics = FirebaseAnalytics.instance;
 
   FirebaseUIAuth.configureProviders([
@@ -34,8 +42,6 @@ Future<void> main() async {
         clientId:
         '650790578068-cv2q1uh5dqghs0a7o00cvq1qgrnr3m9k.apps.googleusercontent.com'),
   ]);
-
-  runApp(MyApp());
 
   runApp(ChangeNotifierProvider(
     create: (context) => ApplicationState(),
@@ -49,10 +55,6 @@ Future<void> initializeDefault() async {
   );
   print('Initialized default app $app');
 
-  await FirebaseAppCheck.instance.activate(
-    //androidProvider: AndroidProvider.debug,
-    androidProvider: AndroidProvider.playIntegrity,
-  );
 }
 
 class MyApp extends StatelessWidget {
