@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:http/http.dart' as http;
+import 'package:cloud_functions/cloud_functions.dart';
 
 import 'CajonAppBar.dart';
 
@@ -73,24 +72,14 @@ class _CartaEventoState extends State<CartaEvento> {
   }
 
   Future<String> getAddressFromGeoPoint(GeoPoint geoPoint) async {
-    final apiKey =  'AIzaSyDTb2UY1JArfhzUKOGEefvDlc-u6Xocqhc'; //BuildConfig.MAPS_API_KEY;
-    //final apiKey;
-    final url =
-        'https://maps.googleapis.com/maps/api/geocode/json?latlng=${geoPoint.latitude},${geoPoint.longitude}&key=$apiKey';
-
-    final response = await http.get(Uri.parse(url));
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (data['status'] == 'OK') {
-        return data['results'][0]['formatted_address'];
-      } else {
-        throw Exception('Error al obtener la dirección: ${data['status']}');
-      }
-    } else {
-      throw Exception(
-          'Error al conectar con la API de Google: ${response.statusCode}');
-    }
+    final callable = FirebaseFunctions.instance.httpsCallable('reverseGeocode');
+    final response = await callable
+        .call({'lat': geoPoint.latitude, 'lng': geoPoint.longitude});
+    final data = response.data as Map;
+    final results = data['results'] as List<dynamic>?
+        ?? const <dynamic>[];
+    if (results.isEmpty) return 'Dirección no disponible';
+    return results.first['formatted_address'] as String? ?? 'Dirección no disponible';
   }
 
   String comprobarPresupuesto(bool tienePresupuesto, int presupuesto) {
