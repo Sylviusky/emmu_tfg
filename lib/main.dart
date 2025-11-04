@@ -35,18 +35,6 @@ Future<void> main() async {
     androidProvider: _getAndroidProvider(),
   );
 
-//  try {
-//    final token = await FirebaseAppCheck.instance.getToken();
-//    if (token != null) {
-//      print("=== FIREBASE APP CHECK DEBUG TOKEN ===");
-//      print("Add this token to Firebase Console -> App Check -> Debug tokens:");
-//      print(token);
-//    print("=====================================");
-//    }
-//  } catch (e) {
-//    print("App Check token generation failed: $e");
-//  }
-
   FirebaseAnalytics analytics = FirebaseAnalytics.instance;
 
   FirebaseUIAuth.configureProviders([
