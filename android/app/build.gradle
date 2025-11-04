@@ -92,27 +92,30 @@ android {
 //   }
 
     signingConfigs {
-        release { // In Groovy, you can directly define the configuration block
-            if (keystorePropertiesFile.exists()) {
-                storeFile     file(keystoreProperties['storeFile'])
-                storePassword keystoreProperties['storePassword']
-                keyAlias      keystoreProperties['keyAlias']
-                keyPassword   keystoreProperties['keyPassword']
-            }
+        release {
+            storeFile file("debug.keystore")
+            storePassword "android"
+            keyAlias "AndroidDebugKey"
+            keyPassword "android"
+        }
+        debug {
+            storeFile file("debug.keystore")
+            storePassword "android"
+            keyAlias "AndroidDebugKey"
+            keyPassword "android"
         }
     }
 
 
     buildTypes {
         release {
-            //signingConfig signingConfigs.debug
             signingConfig signingConfigs.release
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.debug
             minifyEnabled false
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -126,22 +129,21 @@ flutter {
 
 dependencies {
     // Import the BoM for the Firebase platform
-    implementation platform("com.google.firebase:firebase-bom:34.1.0")
+    implementation platform('com.google.firebase:firebase-bom:32.7.0')
+
+    // Firebase dependencies
+    implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation("com.google.firebase:firebase-crashlytics-ktx")
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
+
+
+
+    // App Check Play Integrity provider for distribution without per-device tokens
     implementation("com.google.firebase:firebase-appcheck-playintegrity")
 
-    implementation 'com.google.firebase:firebase-auth'
-    implementation 'com.google.firebase:firebase-firestore'
-    implementation 'com.google.firebase:firebase-dynamic-links:22.1.0'
-    // Add the dependency for the App Check library
-    // When using the BoM, you don't specify versions in Firebase library dependencies
-    implementation 'com.google.firebase:firebase-appcheck'
-    implementation 'com.google.firebase:firebase-appcheck-safetynet'
-    // Add the dependencies for the App Check libraries
-    // When using the BoM, you don't specify versions in Firebase library dependencies
-    implementation 'com.google.firebase:firebase-appcheck-debug'
-
-
-    implementation "com.google.firebase:firebase-analytics"
+    implementation "com.google.firebase:firebase-dynamic-links:22.1.0"
 
     // AndroidX replacements for old support libs
     implementation "androidx.core:core-ktx:1.16.0"

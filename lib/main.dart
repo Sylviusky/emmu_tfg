@@ -1,7 +1,6 @@
-
-
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -19,6 +18,11 @@ import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+AndroidProvider _getAndroidProvider() {
+  // Use Play Integrity for distribution across devices without per-device tokens
+  return AndroidProvider.playIntegrity;
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -26,13 +30,22 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  //COMENTADO PARA EVITAR PROBLEMAS DE TOKEN CON LA INSTALACIÓN DEL .APK
-  // await FirebaseAppCheck.instance.activate(
-  //   //androidProvider: AndroidProvider.debug,
-  //   //androidProvider: AndroidProvider.playIntegrity,
-  // );
+  // Configure App Check based on build mode and distribution
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: _getAndroidProvider(),
+  );
 
-  runApp(MyApp());
+//  try {
+//    final token = await FirebaseAppCheck.instance.getToken();
+//    if (token != null) {
+//      print("=== FIREBASE APP CHECK DEBUG TOKEN ===");
+//      print("Add this token to Firebase Console -> App Check -> Debug tokens:");
+//      print(token);
+//    print("=====================================");
+//    }
+//  } catch (e) {
+//    print("App Check token generation failed: $e");
+//  }
 
   FirebaseAnalytics analytics = FirebaseAnalytics.instance;
 

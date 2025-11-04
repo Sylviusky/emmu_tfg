@@ -173,6 +173,12 @@ class _InicioSesion extends State<InicioSesion> {
                                   _error = 'Demasiados intentos fallidos. Inténtalo más tarde.';
                                 } else if (e.code == 'network-request-failed') {
                                   _error = 'Error de red. Verifica tu conexión a internet.';
+                                } else if (e.code == 'app-not-authorized') {
+                                  _error =
+                                      'Error de autenticación de la aplicación. Inténtalo más tarde.';
+                                } else if (e.code == 'app-check-token-error') {
+                                  _error =
+                                      'Error de verificación de la aplicación. Inténtalo más tarde.';
                                 }
                                 // Add any other specific codes you observe from the print statement above
                                 else {
