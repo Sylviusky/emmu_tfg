@@ -12,12 +12,7 @@ buildscript {
     }
 }
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
+// Repositories are defined in settings.gradle (dependencyResolutionManagement)
 
 rootProject.buildDir = '../build'
 subprojects {
