@@ -104,17 +104,6 @@ class _MisAnunciosState extends State<MisAnuncios> {
                         itemBuilder: (context, index) {
                           var evento = data.docs[index];
                           var idUsuario = evento['IdUsuario'].toString();
-
-                          // Asumiendo que tienes un campo userId en ClasPart
-                          //No tengo userID ni en clases ni eventos. Hace falta??? PREGUNTAR
-
-                          // Verificar que idUsuario no sea nulo o vacío
-                          //REALMENTE NO ES NECESARIO PORQUE CADA EVENTO SOLO PUEDE CREARSE TRAS REGISTRARSE/INICIAR SESIÓN
-                          //POR LO QUE TENDRÍA SIEMPRE UN IDUSUARIO
-                          //if (idUsuario.isEmpty) {
-                          //  return ListTile();
-                          //}
-
                           return FutureBuilder<QuerySnapshot>(
                             future: FirebaseFirestore.instance
                                 .collection('Usuario')
@@ -166,7 +155,7 @@ class _MisAnunciosState extends State<MisAnuncios> {
                                             tienePresupuesto: true,
                                             presupuesto: 0,
                                             idUsuario: userData['email'],
-                                            docId: null,
+                                            docId: 'docID',
                                           ),
                                         ),
                                       );
@@ -307,7 +296,7 @@ class _MisAnunciosState extends State<MisAnuncios> {
                                             negociable: false,
                                             coste: 0,
                                             idUsuario: userData['email'],
-                                            id: null,
+                                            id: 'id',
                                           ),
                                         ),
                                       );

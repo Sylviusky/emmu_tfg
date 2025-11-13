@@ -1,4 +1,10 @@
 Firebase.initialize(context)
+
+val firebaseAppCheck = FirebaseAppCheck.getInstance()
+firebaseAppCheck.installAppCheckProviderFactory(
+    DebugAppCheckProviderFactory.getInstance()
+)
+
 Firebase.appCheck.installAppCheckProviderFactory(
     //YourCustomAppCheckProviderFactory(),
     DebugAppCheckProviderFactory.getInstance()

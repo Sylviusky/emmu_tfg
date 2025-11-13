@@ -263,7 +263,7 @@ class _CartaEventoState extends State<CartaEvento> {
 }
 
 class CartaEventoEdit extends StatefulWidget {
-  final String? docId;
+  final String docId;
   final String idUsuario;
   final String foto;
   final String nombre;
@@ -308,8 +308,9 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
     super.initState();
     _tituloController = TextEditingController(text: widget.titulo);
     _descripcionController = TextEditingController(text: widget.descripcion);
-    _ubicacionController =
-        TextEditingController(text: widget.ubicacion.toString());
+    // Format ubicacion as "latitude, longitude" for easier editing
+    _ubicacionController = TextEditingController(
+        text: '${widget.ubicacion.latitude}, ${widget.ubicacion.longitude}');
     _fechaController =
         TextEditingController(text: widget.fecha.toDate().toString());
     _presupuestoController =
@@ -318,33 +319,187 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
     _selectedDate = widget.fecha.toDate();
   }
 
+  // Helper method to parse GeoPoint from string input
+  GeoPoint? _parseGeoPointFromString(String input) {
+    try {
+      // Try to parse format like "GeoPoint(latitude, longitude)" or "lat, lng"
+      final cleanInput = input.trim();
+      
+      // Check if it's already in GeoPoint string format
+      if (cleanInput.startsWith('GeoPoint(')) {
+        final content = cleanInput.substring(9, cleanInput.length - 1);
+        final parts = content.split(',');
+        if (parts.length == 2) {
+          final lat = double.parse(parts[0].trim());
+          final lng = double.parse(parts[1].trim());
+          return GeoPoint(lat, lng);
+        }
+      } else {
+        // Try to parse as "lat, lng" format
+        final parts = cleanInput.split(',');
+        if (parts.length == 2) {
+          final lat = double.parse(parts[0].trim());
+          final lng = double.parse(parts[1].trim());
+          return GeoPoint(lat, lng);
+        }
+      }
+    } catch (e) {
+      print('Error parsing GeoPoint: $e');
+    }
+    return null;
+  }
+
   Future<void> _updateEvento() async {
-    // Query the collection to find the document with the matching docId
-    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-        .collection('events')
-        .where('docId', isEqualTo: widget.docId)
-        .get();
+    try {
+      // Show loading indicator
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Guardando cambios...'),
+          duration: Duration(seconds: 1),
+        ),
+      );
 
-    // Check if the document exists
-    if (querySnapshot.docs.isNotEmpty) {
-      // Get the document reference
-      DocumentReference docRef = querySnapshot.docs.first.reference;
+      // Validate input
+      if (_tituloController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('El título no puede estar vacío'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
 
-      // Update the fields of the found document
-      await docRef.update({
-        'Titulo': _tituloController.text,
-        'Descripcion': _descripcionController.text,
-        'Ubicacion': _ubicacionController.text,
-        'Fecha': _fechaController.text,
-        'TienePresupuesto': _tienePresupuesto,
-        'Presupuesto': double.parse(_presupuestoController.text),
-      });
+      if (_descripcionController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('La descripción no puede estar vacía'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
 
-      // Navigate back after updating
-      Navigator.pop(context);
-    } else {
-      // Handle the case where the document is not found
-      print('Document with docId ${widget.docId} not found');
+      // Parse presupuesto
+      int presupuesto = 0;
+      if (_tienePresupuesto) {
+        try {
+          presupuesto = int.parse(_presupuestoController.text.trim());
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('El presupuesto debe ser un número válido'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+
+      // Parse ubicacion - try to parse from string, otherwise keep original
+      GeoPoint ubicacion = widget.ubicacion;
+      final parsedUbicacion = _parseGeoPointFromString(_ubicacionController.text.trim());
+      if (parsedUbicacion != null) {
+        ubicacion = parsedUbicacion;
+      }
+
+      // Convert selected date to Timestamp
+      final fechaTimestamp = Timestamp.fromDate(_selectedDate);
+
+      // Check if this is a new document (placeholder docId)
+      final isNewDocument = widget.docId == 'docID' || widget.docId.isEmpty;
+      
+      if (isNewDocument) {
+        // Use Firestore's auto-generated document ID (random and guaranteed unique)
+        // This is the most efficient approach - no counter needed, no collisions possible
+        final docRef = FirebaseFirestore.instance.collection('Evento').doc();
+        final autoGeneratedId = docRef.id;
+        
+        // Create new document with auto-generated ID
+        // Store the auto-generated ID as docId field for consistency with existing code
+        await docRef.set({
+          'docId': autoGeneratedId, // Store the auto-generated ID for reference
+          'Titulo': _tituloController.text.trim(),
+          'Descripcion': _descripcionController.text.trim(),
+          'Ubicacion': ubicacion,
+          'Fecha': fechaTimestamp,
+          'TienePresupuesto': _tienePresupuesto,
+          'Presupuesto': presupuesto,
+          'IdUsuario': widget.idUsuario,
+        });
+        
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Evento creado exitosamente'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          
+          // Navigate back after creating
+          Navigator.pop(context);
+        }
+      } else {
+        // Existing document - update it
+        // Query the collection to find the document with the matching docId
+        QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+            .collection('Evento')
+            .where('docId', isEqualTo: widget.docId)
+            .get();
+
+        // Check if the document exists
+        if (querySnapshot.docs.isNotEmpty) {
+          // Get the document reference
+          DocumentReference docRef = querySnapshot.docs.first.reference;
+
+          // Update the fields of the found document
+          await docRef.update({
+            'Titulo': _tituloController.text.trim(),
+            'Descripcion': _descripcionController.text.trim(),
+            'Ubicacion': ubicacion,
+            'Fecha': fechaTimestamp,
+            'TienePresupuesto': _tienePresupuesto,
+            'Presupuesto': presupuesto,
+          });
+
+          // Show success message
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Evento actualizado exitosamente'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
+
+            // Navigate back after updating
+            Navigator.pop(context);
+          }
+        } else {
+          // Handle the case where the document is not found
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error: No se encontró el documento con docId ${widget.docId}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      // Handle any errors
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al actualizar el evento: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      print('Error updating evento: $e');
     }
   }
 
@@ -527,7 +682,11 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
                       horizontal: 8.0, vertical: 10.0),
                   child: TextField(
                     controller: _ubicacionController,
-                    decoration: InputDecoration(labelText: 'Ubicación'),
+                    decoration: InputDecoration(
+                      labelText: 'Ubicación (Latitud, Longitud)',
+                      hintText: 'Ejemplo: 39.494909, -0.684287',
+                      helperText: 'Formato: latitud, longitud',
+                    ),
                   ),
                 ),
                 Padding(

@@ -23,26 +23,44 @@ class Registro extends StatefulWidget {
   State<Registro> createState() => _RegistroState();
 }
 
-Future<void> registroUsuario(String email, String password, String nombre,
-    String apellido, int telf) async {
+Future<UserCredential?> registroUsuario(String email, String password, String nombre,
+    String apellido, String telf) async {
   try {
+    // Create user in Firebase Authentication
     UserCredential userCredential =
         await FirebaseAuth.instance.createUserWithEmailAndPassword(
       email: email,
       password: password,
     );
 
-    //String usuarioId = FirebaseAuth.instance.currentUser.uid;
-//MIRAR MI CHAT DE TEAMS
-    //val usuario = Usuario("Juan", "juan@example.com", "1234567890", "Contraseña", "Pérez")
+    // Get the user UID
+    String uid = userCredential.user!.uid;
 
-    // User registered successfully
+    // Create user document in Firestore with UID as document ID
+    await FirebaseFirestore.instance
+        .collection('Usuario')
+        .doc(uid)
+        .set({
+      'email': email,
+      'Nombre': nombre,
+      'Apellido': apellido,
+      'Telefono': telf.isEmpty ? '' : telf,
+      // Note: Password is NOT stored in Firestore for security reasons
+    });
+
+    return userCredential;
   } on FirebaseAuthException catch (e) {
     if (e.code == 'email-already-in-use') {
-      print('Ya existe un usuario con este email.');
+      throw Exception('Ya existe un usuario con este email.');
+    } else if (e.code == 'weak-password') {
+      throw Exception('La contraseña es demasiado débil.');
+    } else if (e.code == 'invalid-email') {
+      throw Exception('El email no es válido.');
+    } else {
+      throw Exception('Error al crear el usuario: ${e.message}');
     }
   } catch (e) {
-    print(e.toString());
+    throw Exception('Error inesperado: ${e.toString()}');
   }
 }
 
@@ -57,17 +75,23 @@ class _RegistroState extends State<Registro> {
   final _emailController = TextEditingController();
   final _telfController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   String email = '';
   String password = '';
   String nombre = '';
   String apellido = '';
-  int telf = 0;
+  String telf = '';
 
-  waitFor(int seconds) async {
-    await Future.delayed(Duration(seconds: seconds));
-    _emailController.clear();
-    _passwordController.clear();
+  @override
+  void dispose() {
+    _nombreController.dispose();
+    _apellidosController.dispose();
+    _emailController.dispose();
+    _telfController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -223,7 +247,7 @@ class _RegistroState extends State<Registro> {
                                       hintText: 'Introduce tu teléfono',
                                     ),
                                     onChanged: (value) {
-                                      telf = int.parse(value);
+                                      telf = value;
                                     },
                                   ),
                                   const Padding(
@@ -231,6 +255,8 @@ class _RegistroState extends State<Registro> {
                                         EdgeInsets.symmetric(vertical: 15.0),
                                   ),
                                   TextFormField(
+                                    controller: _passwordController,
+                                    obscureText: true,
                                     decoration: InputDecoration(
                                       labelText: 'Contraseña *',
                                       labelStyle: TextStyle(
@@ -265,6 +291,8 @@ class _RegistroState extends State<Registro> {
                                         EdgeInsets.symmetric(vertical: 15.0),
                                   ),
                                   TextFormField(
+                                    controller: _confirmPasswordController,
+                                    obscureText: true,
                                     decoration: InputDecoration(
                                       labelText: 'Verificar contraseña *',
                                       labelStyle: TextStyle(
@@ -278,15 +306,15 @@ class _RegistroState extends State<Registro> {
                                         borderSide: BorderSide(
                                             color: Colors.red.shade100),
                                       ),
-                                      hintText: 'Introduce tu contraseña',
+                                      hintText: 'Introduce tu contraseña nuevamente',
                                     ),
                                     validator: (String? value) {
-                                      if (value!.isEmpty) {
-                                        return 'Por favor, introduce tu contraseña';
-                                      } else if (!RegExp(
-                                              r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)')
-                                          .hasMatch(value)) {
-                                        return 'La contraseña debe contener al menos una mayúscula, una minúscula y un número';
+                                      if (value == null || value.isEmpty) {
+                                        return 'Por favor, verifica tu contraseña';
+                                      } else if (_passwordController.text.isEmpty) {
+                                        return 'Por favor, introduce primero tu contraseña';
+                                      } else if (value != _passwordController.text) {
+                                        return 'Las contraseñas no coinciden';
                                       }
                                       return null;
                                     },
@@ -308,35 +336,53 @@ class _RegistroState extends State<Registro> {
                                 // Validate will return true if the form is valid, or false if
                                 // the form is invalid.
                                 if (_formKeyReg.currentState!.validate()) {
-                                  SharedPreferences prefs =
-                                      await SharedPreferences.getInstance();
-                                  await prefs.setString('userEmail', email);
-
-                                  registroUsuario(
-                                      email, password, nombre, apellido, telf);
-
+                                  // Show loading indicator
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content: Text('Procesando datos')));
-                                  FirebaseFirestore.instance
-                                      .collection('Usuario')
-                                      .add({
-                                    'email': _emailController.text,
-                                    'password': _passwordController.text,
-                                    'Apellido': _apellidosController.text,
-                                    'Nombre': _nombreController.text,
-                                    'Telefono': _telfController.text,
-                                  });
+                                      const SnackBar(
+                                          content: Text('Procesando datos...')));
 
-                                  waitFor(2);
-                                  // Process data.
+                                  try {
+                                    // Register user in Firebase Auth and Firestore
+                                    UserCredential? userCredential = await registroUsuario(
+                                        email, password, nombre, apellido, telf);
+
+                                    if (userCredential != null) {
+                                      // Save email to SharedPreferences
+                                      SharedPreferences prefs =
+                                          await SharedPreferences.getInstance();
+                                      await prefs.setString('userEmail', email);
+
+                                      // Clear form fields
+                                      _nombreController.clear();
+                                      _apellidosController.clear();
+                                      _emailController.clear();
+                                      _telfController.clear();
+                                      _passwordController.clear();
+                                      _confirmPasswordController.clear();
+
+                                      // Show success message
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                              content: Text('Usuario creado exitosamente'),
+                                              backgroundColor: Colors.green));
+
+                                      // Navigate to Eventos page
+                                      if (mounted) {
+                                        Navigator.pushReplacement(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) => const Eventos()),
+                                        );
+                                      }
+                                    }
+                                  } catch (e) {
+                                    // Show error message
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                            content: Text(e.toString().replaceFirst('Exception: ', '')),
+                                            backgroundColor: Colors.red));
+                                  }
                                 }
-
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => Eventos()),
-                                );
                               },
                               child: const Text(
                                 'Crear usuario',
