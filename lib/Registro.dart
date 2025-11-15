@@ -1,5 +1,5 @@
 //import 'dart:html';
-//import 'dart:io';
+import 'dart:io';
 
 //import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 
@@ -7,6 +7,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 import 'Eventos_Page.dart';
 import 'auth_gate.dart';
@@ -24,7 +26,7 @@ class Registro extends StatefulWidget {
 }
 
 Future<UserCredential?> registroUsuario(String email, String password, String nombre,
-    String apellido, String telf) async {
+    String apellido, String telf, String? profilePictureUrl) async {
   try {
     // Create user in Firebase Authentication
     UserCredential userCredential =
@@ -37,16 +39,19 @@ Future<UserCredential?> registroUsuario(String email, String password, String no
     String uid = userCredential.user!.uid;
 
     // Create user document in Firestore with UID as document ID
-    await FirebaseFirestore.instance
-        .collection('Usuario')
-        .doc(uid)
-        .set({
+    Map<String, dynamic> userData = {
       'email': email,
       'Nombre': nombre,
       'Apellido': apellido,
       'Telefono': telf.isEmpty ? '' : telf,
+      'Foto': profilePictureUrl ?? 'assets/default_user.jpg', // Default profile picture
       // Note: Password is NOT stored in Firestore for security reasons
-    });
+    };
+
+    await FirebaseFirestore.instance
+        .collection('Usuario')
+        .doc(uid)
+        .set(userData);
 
     return userCredential;
   } on FirebaseAuthException catch (e) {
@@ -82,6 +87,11 @@ class _RegistroState extends State<Registro> {
   String nombre = '';
   String apellido = '';
   String telf = '';
+  
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+  File? _pickedImage;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void dispose() {
@@ -92,6 +102,68 @@ class _RegistroState extends State<Registro> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        setState(() {
+          _pickedImage = File(image.path);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al seleccionar imagen: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<String?> _uploadImage() async {
+    if (_pickedImage == null) {
+      return null; // Return null if no image was picked, will use default
+    }
+
+    try {
+      // We'll upload after user creation, so we need to get the UID first
+      // For now, we'll return null and handle upload after registration
+      return null;
+    } catch (e) {
+      print('Error preparing image upload: $e');
+      return null;
+    }
+  }
+
+  Future<String?> _uploadImageToFirebase(String uid) async {
+    if (_pickedImage == null) {
+      return null; // Return null if no image was picked, will use default
+    }
+
+    try {
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('profile_pictures')
+          .child(uid)
+          .child('profile.jpg');
+
+      await storageRef.putFile(_pickedImage!);
+      final downloadUrl = await storageRef.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      print('Error uploading image: $e');
+      return null; // Return null on error, will use default
+    }
   }
 
   @override
@@ -116,9 +188,45 @@ class _RegistroState extends State<Registro> {
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 20.0),
                 ),
-                const Image(
-                  image: AssetImage('assets/logortr.png'),
-                  width: 200,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Profile image selector on the left
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 60,
+                            backgroundColor: Colors.grey[300],
+                            backgroundImage: _pickedImage != null
+                                ? FileImage(_pickedImage!)
+                                : const AssetImage('assets/default_user.jpg')
+                                    as ImageProvider,
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: CircleAvatar(
+                              radius: 20,
+                              backgroundColor: Colors.red,
+                              child: const Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    // Logo on the right
+                    const Image(
+                      image: AssetImage('assets/logortr.png'),
+                      width: 200,
+                    ),
+                  ],
                 ),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 20.0),
@@ -256,7 +364,7 @@ class _RegistroState extends State<Registro> {
                                   ),
                                   TextFormField(
                                     controller: _passwordController,
-                                    obscureText: true,
+                                    obscureText: _obscurePassword,
                                     decoration: InputDecoration(
                                       labelText: 'Contraseña *',
                                       labelStyle: TextStyle(
@@ -271,6 +379,7 @@ class _RegistroState extends State<Registro> {
                                             color: Colors.red.shade100),
                                       ),
                                       hintText: 'Introduce tu contraseña',
+                                      errorMaxLines: 3,
                                     ),
                                     onChanged: (value) {
                                       password = value;
@@ -292,7 +401,7 @@ class _RegistroState extends State<Registro> {
                                   ),
                                   TextFormField(
                                     controller: _confirmPasswordController,
-                                    obscureText: true,
+                                    obscureText: _obscureConfirmPassword,
                                     decoration: InputDecoration(
                                       labelText: 'Verificar contraseña *',
                                       labelStyle: TextStyle(
@@ -319,6 +428,25 @@ class _RegistroState extends State<Registro> {
                                       return null;
                                     },
                                   ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Checkbox(
+                                        checkColor: Colors.white,
+                                        activeColor: Colors.red,
+                                        value: !_obscurePassword,
+                                        onChanged: (bool? value) {
+                                          final showPassword = value ?? false;
+                                          setState(() {
+                                            _obscurePassword = !showPassword;
+                                            _obscureConfirmPassword =
+                                                !showPassword;
+                                          });
+                                        },
+                                      ),
+                                      const Text('Mostrar contraseñas'),
+                                    ],
+                                  ),
                                 ],
                               ),
                             ),
@@ -344,9 +472,29 @@ class _RegistroState extends State<Registro> {
                                   try {
                                     // Register user in Firebase Auth and Firestore
                                     UserCredential? userCredential = await registroUsuario(
-                                        email, password, nombre, apellido, telf);
+                                        email, password, nombre, apellido, telf, null);
 
                                     if (userCredential != null) {
+                                      String uid = userCredential.user!.uid;
+                                      
+                                      // Upload profile image if one was selected
+                                      String? profilePictureUrl;
+                                      if (_pickedImage != null) {
+                                        try {
+                                          profilePictureUrl = await _uploadImageToFirebase(uid);
+                                          // Update Firestore with the uploaded image URL
+                                          if (profilePictureUrl != null) {
+                                            await FirebaseFirestore.instance
+                                                .collection('Usuario')
+                                                .doc(uid)
+                                                .update({'Foto': profilePictureUrl});
+                                          }
+                                        } catch (e) {
+                                          print('Error uploading profile image: $e');
+                                          // Continue even if image upload fails
+                                        }
+                                      }
+
                                       // Save email to SharedPreferences
                                       SharedPreferences prefs =
                                           await SharedPreferences.getInstance();
@@ -359,6 +507,9 @@ class _RegistroState extends State<Registro> {
                                       _telfController.clear();
                                       _passwordController.clear();
                                       _confirmPasswordController.clear();
+                                      setState(() {
+                                        _pickedImage = null;
+                                      });
 
                                       // Show success message
                                       ScaffoldMessenger.of(context).showSnackBar(

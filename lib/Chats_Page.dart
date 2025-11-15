@@ -1,122 +1,83 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'CajonAppBar.dart';
 
-class Chats extends StatefulWidget {
+class Chats extends StatelessWidget {
   const Chats({super.key});
-
-  @override
-  _ChatsState createState() => _ChatsState();
-}
-
-class _ChatsState extends State<Chats> {
-  final CollectionReference eventos =
-      FirebaseFirestore.instance.collection('Evento');
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.red,
-          title: const Text(
-            'Eventos',
-            style: TextStyle(fontSize: 25, color: Colors.white),
-          ),
-          iconTheme: IconThemeData(color: Colors.white),
+      backgroundColor: Colors.redAccent,
+      appBar: AppBar(
+        backgroundColor: Colors.red,
+        title: const Text(
+          'Chats',
+          style: TextStyle(fontSize: 25, color: Colors.white),
         ),
-        drawer: Cajon(),
-        body: StreamBuilder<QuerySnapshot>(
-          stream: eventos.snapshots(),
-          builder:
-              (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-            if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
-            }
-
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            }
-
-            final data = snapshot.requireData;
-
-            return ListView.builder(
-              itemCount: data.size,
-              itemBuilder: (context, index) {
-                var evento = data.docs[index];
-                var idUsuario = evento['IdUsuario']
-                    .toString(); // Asumiendo que tienes un campo userId en ClasPart
-                //No tengo userID ni en clases ni eventos. Hace falta??? PREGUNTAR
-
-                return FutureBuilder<DocumentSnapshot>(
-                  future: FirebaseFirestore.instance
-                      .collection('Usuario')
-                      .doc(idUsuario)
-                      .get(),
-                  builder: (context, userSnapshot) {
-                    if (userSnapshot.hasError) {
-                      return Center(
-                          child: Text('Error: ${userSnapshot.error}'));
-                    }
-
-                    if (userSnapshot.connectionState ==
-                        ConnectionState.waiting) {
-                      return Center(child: CircularProgressIndicator());
-                    }
-
-                    var userData = userSnapshot.data;
-
-                    if (userData == null) {
-                      return Center(child: Text('Usuario no encontrado'));
-                    }
-
-                    return ListTile(
-                        title: Text('PÁGINA DE LOS MENSAJES',
-                            style: TextStyle(color: Colors.green, fontSize: 30))
-                        /*title: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(data.docs[index]['Titulo']),
-                          SizedBox(height: 8.0),
-                          Text(data.docs[index]['Descripcion']),
-                        ],
-                      ),
-                      trailing: Container(
-                        width: 200,
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          '${data.docs[index]['Presupuesto']} €',
-                          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 25),
-                        ),
-                      ),
-                      onTap: () {
-                        */ /*Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ChatPersonal(
-                              foto: userData['Foto'] ?? '',
-                              nombre: userData['Nombre'],
-                              apellido: userData['Apellido'],
-                              titulo: evento['Titulo'],
-                              descripcion: evento['Descripcion'],
-                              ubicacion: evento['Ubicacion'],
-                              fecha: evento['Fecha'],
-                              tienePresupuesto: evento['TienePresupuesto'],
-                              presupuesto: evento['Presupuesto'],
-                              onChatPressed: () {
-                                // Aquí puedes agregar la lógica para navegar a la página de chat
-                              },
-                            ),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      drawer: Cajon(),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AspectRatio(
+                aspectRatio: 9 / 16,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    'assets/default_chats_page.jpg',
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.white,
+                        child: const Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.chat,
+                                size: 120,
+                                color: Colors.black38,
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'Añade aquí tu imagen de chats por defecto',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
                           ),
-                        );*/ /*
-                      },*/
-                        );
-                  },
-                );
-              },
-            );
-          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Próximamente: centro de mensajes',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
-
+      ),
     );
   }
 }
+
+/*
+  Aquí podrás reactivar tu lógica de chats más adelante.
+*/

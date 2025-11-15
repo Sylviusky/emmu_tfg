@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'CartaUsuario.dart';
+import 'Chat_Indiv.dart';
 
 import 'CajonAppBar.dart';
 
@@ -43,12 +45,27 @@ class CartaEvento extends StatefulWidget {
 
 class _CartaEventoState extends State<CartaEvento> {
   late String _userEmail;
+  late String _titulo;
+  late String _descripcion;
+  late GeoPoint _ubicacion;
+  late Timestamp _fecha;
+  late int _presupuesto;
+  late bool _tienePresupuesto;
+
+  late Future<String> _addressFuture;
   bool _isEditable = false;
 
   @override
   void initState() {
     super.initState();
+    _titulo = widget.titulo;
+    _descripcion = widget.descripcion;
+    _ubicacion = widget.ubicacion;
+    _fecha = widget.fecha;
+    _presupuesto = widget.presupuesto;
+    _tienePresupuesto = widget.tienePresupuesto;
     _loadUserEmail();
+    _addressFuture = getAddressFromGeoPoint(_ubicacion);
   }
 
   //¿Vale la pena eliminar esta comprobación? Ya se hace para cargar el listado de Eventos
@@ -64,6 +81,85 @@ class _CartaEventoState extends State<CartaEvento> {
     });
   }
 
+  void _navigateToUserProfile() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CartaUsuario(
+          idUsuario: widget.idUsuario,
+          onContactPressed: _openChat,
+        ),
+      ),
+    );
+  }
+
+  void _openChat() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatPersonal(
+          otherUserName: '${widget.nombre} ${widget.apellido}',
+        ),
+      ),
+    );
+    widget.onChatPressed();
+  }
+
+  Future<void> _navigateToEdit() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CartaEventoEdit(
+          idUsuario: widget.idUsuario,
+          foto: widget.foto,
+          nombre: widget.nombre,
+          apellido: widget.apellido,
+          // Pasamos los datos actuales (de las variables de estado) a la pantalla de edición
+          titulo: _titulo,
+          descripcion: _descripcion,
+          ubicacion: _ubicacion,
+          fecha: _fecha,
+          tienePresupuesto: _tienePresupuesto,
+          presupuesto: _presupuesto,
+          docId: widget.docId,
+        ),
+      ),
+    );
+
+    // Si la pantalla de edición devolvió 'true', recargamos los datos.
+    if (result == true && mounted) {
+      _reloadData();
+    }
+  }
+
+  // --- CAMBIO 4: Nuevo método para recargar los datos desde Firestore ---
+  Future<void> _reloadData() async {
+    try {
+      DocumentSnapshot updatedDoc = await FirebaseFirestore.instance
+          .collection('Evento')
+          .doc(widget.docId)
+          .get();
+
+      if (updatedDoc.exists) {
+        final data = updatedDoc.data() as Map<String, dynamic>;
+
+        // Actualizamos las variables de estado con los nuevos datos,
+        // lo que redibujará la UI automáticamente.
+        setState(() {
+          _titulo = data['Titulo'];
+          _descripcion = data['Descripcion'];
+          _ubicacion = data['Ubicacion'];
+          _fecha = data['Fecha'];
+          _presupuesto = data['Presupuesto'];
+          _tienePresupuesto = data['TienePresupuesto'];
+          // Refrescamos la dirección si la ubicación cambió
+          _addressFuture = getAddressFromGeoPoint(_ubicacion);
+        });
+      }
+    } catch (e) {
+      print("Error al recargar los datos del evento: $e");
+    }
+  }
   Uri generateGoogleMapsUri(GeoPoint geoPoint) {
     final latitude = geoPoint.latitude;
     final longitude = geoPoint.longitude;
@@ -100,163 +196,151 @@ class _CartaEventoState extends State<CartaEvento> {
       ),
       drawer: Cajon(),
       body: SingleChildScrollView(
-          padding: const EdgeInsets.all(15.0),
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height - 30,
-            width: MediaQuery.of(context).size.width - 30, // Ajusta el ancho aquí
-            child: Card(
+        padding: const EdgeInsets.all(15.0),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height - 30,
+          width: MediaQuery.of(context).size.width - 30,
+          child: Card(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+            Row(
+            children: [
+            GestureDetector(
+            onTap: _isEditable ? null : _navigateToUserProfile,
+              child: CircleAvatar(
+                backgroundImage: AssetImage('assets/default_user.jpg'),
+                radius: 50,
+              ),
+            ),
+            SizedBox(width: 20),
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundImage: AssetImage('assets/default_user.jpg'),
-                        radius: 50,
-                      ),
-                      SizedBox(width: 20),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.titulo,
-                            style: TextStyle(
-                              fontSize: 23.0,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            comprobarPresupuesto(
-                                widget.tienePresupuesto, widget.presupuesto),
-                            style: TextStyle(
-                              fontSize: 23.0,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.red,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8.0, vertical: 13),
-                    child: Text(
-                      '${widget.nombre}, ${widget.apellido}',
-                      style: TextStyle(fontSize: 16.0),
+                  Text(
+                    _titulo,
+                    style: TextStyle(
+                      fontSize: 23.0,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8.0, vertical: 10.0),
-                    child: Text(
-                      'Fecha: ${widget.fecha.toDate().day}/${widget.fecha.toDate().month}/${widget.fecha.toDate().year}',
-                      style: TextStyle(fontSize: 16.0),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8.0, vertical: 10.0),
-                    child: FutureBuilder<String>(
-                      future: getAddressFromGeoPoint(widget.ubicacion),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return CircularProgressIndicator();
-                        } else if (snapshot.hasError) {
-                          return Text('Error: ${snapshot.error}');
-                        } else {
-                          final address =
-                              snapshot.data ?? 'Dirección no disponible';
-                          final uri = generateGoogleMapsUri(widget.ubicacion);
-                          return GestureDetector(
-                            onTap: () async {
-                              if (await canLaunchUrl(uri)) {
-                                await launchUrl(uri);
-                              } else {
-                                throw 'Could not launch $uri';
-                              }
-                            },
-                            child: Text(
-                              'Ubicación: $address',
-                              style: TextStyle(
-                                fontSize: 16.0,
-                                color: Colors.blue,
-                                decoration: TextDecoration.underline,
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8.0, vertical: 10.0),
-                    child: Text(
-                      widget.descripcion,
-                      style: TextStyle(fontSize: 16.0),
+                  Text(
+                    comprobarPresupuesto(_tienePresupuesto, _presupuesto),
+                    style: TextStyle(
+                      fontSize: 23.0,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
                     ),
                   ),
                 ],
               ),
             ),
+            ],
           ),
-        ),
-
-      floatingActionButton: _isEditable
-          ? Stack(
-        children: [
-          Positioned(
-            bottom: 10,
-            right: 10,
-            child: FloatingActionButton.extended(
-              backgroundColor: Colors.red,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CartaEventoEdit(
-                      idUsuario: widget.idUsuario,
-                      foto: widget.foto,
-                      nombre: widget.nombre,
-                      apellido: widget.apellido,
-                      titulo: widget.titulo,
-                      descripcion: widget.descripcion,
-                      ubicacion: widget.ubicacion,
-                      fecha: widget.fecha,
-                      tienePresupuesto: widget.tienePresupuesto,
-                      presupuesto: widget.presupuesto,
-                      docId: widget.docId,
-                    ),
-                  ),
-                );
-              },
-              label: Text('Editar...',
-                  style: TextStyle(color: Colors.white, fontSize: 20)),
-              icon: Icon(Icons.edit, color: Colors.white),
-            ),
-          ),
-        ],
-      )
-          : Stack(
-        children: [
-          Positioned(
-            bottom: 10,
-            right: 10,
-            child: FloatingActionButton.extended(
-              backgroundColor: Colors.red,
-              onPressed: widget.onChatPressed,
-              label: Text('Ponte en contacto',
-                  style: TextStyle(color: Colors.white, fontSize: 20)),
-              icon: Icon(
-                Icons.question_answer,
-                color: Colors.white,
+          GestureDetector(
+            onTap: _isEditable ? null : _navigateToUserProfile, // Solo se activa si no es tu anuncio
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 8.0, vertical: 13),
+              child: Text(
+                '${widget.nombre}, ${widget.apellido}',
+                style: TextStyle(fontSize: 16.0),
               ),
             ),
           ),
-        ],
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 8.0, vertical: 10.0),
+              child: Text(
+                'Fecha: ${DateFormat('dd/MM/yyyy').format(_fecha.toDate())}',
+                style: TextStyle(fontSize: 16.0),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 8.0, vertical: 10.0),
+              child: FutureBuilder<String>(
+                future: _addressFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return CircularProgressIndicator();
+                  } else if (snapshot.hasError) {
+                    return Text('Error: ${snapshot.error}');
+                  } else {
+                    final address =
+                        snapshot.data ?? 'Dirección no disponible';
+                    final uri = generateGoogleMapsUri(_ubicacion);
+                    return GestureDetector(
+                      onTap: () async {
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri);
+                        } else {
+                          throw 'Could not launch $uri';
+                        }
+                      },
+                      child: Text(
+                        'Ubicación: $address',
+                        style: TextStyle(
+                          fontSize: 16.0,
+                          color: Colors.blue,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 8.0, vertical: 10.0),
+              child: Text(
+                _descripcion,
+                style: TextStyle(fontSize: 16.0),
+              ),
+            ),
+            ],
+          ),
+        ),
       ),
+    ),
+
+    floatingActionButton: _isEditable
+    ? Stack(
+    children: [
+    Positioned(
+    bottom: 10,
+    right: 10,
+    child: FloatingActionButton.extended(
+    backgroundColor: Colors.red,
+    onPressed: _navigateToEdit, // --- CAMBIO 6: Llamar al nuevo método ---
+    label: Text('Editar...',
+    style: TextStyle(color: Colors.white, fontSize: 20)),
+    icon: Icon(Icons.edit, color: Colors.white),
+    ),
+    ),
+    ],
+    )
+        : Stack(
+    children: [
+    Positioned(
+    bottom: 10,
+    right: 10,
+    child: FloatingActionButton.extended(
+    backgroundColor: Colors.red,
+    onPressed: _openChat,
+    label: Text('Ponte en contacto',
+    style: TextStyle(color: Colors.white, fontSize: 20)),
+    icon: Icon(
+    Icons.question_answer,
+    color: Colors.white,
+    ),
+    ),
+    ),
+    ],
+    ),
 
     );
   }
@@ -324,7 +408,7 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
     try {
       // Try to parse format like "GeoPoint(latitude, longitude)" or "lat, lng"
       final cleanInput = input.trim();
-      
+
       // Check if it's already in GeoPoint string format
       if (cleanInput.startsWith('GeoPoint(')) {
         final content = cleanInput.substring(9, cleanInput.length - 1);
@@ -408,13 +492,13 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
 
       // Check if this is a new document (placeholder docId)
       final isNewDocument = widget.docId == 'docID' || widget.docId.isEmpty;
-      
+
       if (isNewDocument) {
         // Use Firestore's auto-generated document ID (random and guaranteed unique)
         // This is the most efficient approach - no counter needed, no collisions possible
         final docRef = FirebaseFirestore.instance.collection('Evento').doc();
         final autoGeneratedId = docRef.id;
-        
+
         // Create new document with auto-generated ID
         // Store the auto-generated ID as docId field for consistency with existing code
         await docRef.set({
@@ -427,7 +511,7 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
           'Presupuesto': presupuesto,
           'IdUsuario': widget.idUsuario,
         });
-        
+
         // Show success message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -437,9 +521,9 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
               duration: Duration(seconds: 2),
             ),
           );
-          
+
           // Navigate back after creating
-          Navigator.pop(context);
+          Navigator.pop(context, true);
         }
       } else {
         // Existing document - update it
@@ -475,7 +559,7 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
             );
 
             // Navigate back after updating
-            Navigator.pop(context);
+            Navigator.pop(context, true);
           }
         } else {
           // Handle the case where the document is not found
@@ -541,7 +625,7 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.redAccent,
-
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: Colors.red,
 
@@ -551,7 +635,7 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
         ),
         iconTheme: IconThemeData(color: Colors.white),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(15.0),
         child: SizedBox(
           width: MediaQuery.of(context).size.width - 30, // Ajusta el ancho aquí
@@ -598,47 +682,47 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
                     style: TextStyle(fontSize: 16.0),
                   ),
                 ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                flex: 2,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10.0),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Checkbox(
-                        value: _tienePresupuesto,
-                        onChanged: (bool? value) {
-                          setState(() {
-                            _tienePresupuesto = value ?? false;
-                          });
-                        },
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Checkbox(
+                              value: _tienePresupuesto,
+                              onChanged: (bool? value) {
+                                setState(() {
+                                  _tienePresupuesto = value ?? false;
+                                });
+                              },
+                            ),
+                            //const SizedBox(width: 8), // Space between checkbox and text
+                            Flexible(child: const Text('Tiene Presupuesto')),
+                          ],
+                        ),
                       ),
-                      //const SizedBox(width: 8), // Space between checkbox and text
-                      Flexible(child: const Text('Tiene Presupuesto')),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                flex: 3,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10.0),
-                  child: TextField(
-                    controller: _presupuestoController,
-                    decoration: InputDecoration(
-                      labelText: 'Presupuesto (€)',
                     ),
-                    keyboardType: TextInputType.number,
-                    enabled: _tienePresupuesto,
-                  ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 3,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10.0),
+                        child: TextField(
+                          controller: _presupuestoController,
+                          decoration: InputDecoration(
+                            labelText: 'Presupuesto (€)',
+                          ),
+                          keyboardType: TextInputType.number,
+                          enabled: _tienePresupuesto,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 16.0), // Added more vertical padding
                   child: Column( // Use a column if you want a label above the date display

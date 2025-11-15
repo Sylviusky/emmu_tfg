@@ -30,7 +30,7 @@ class _CajonState extends State<Cajon> {
           ),
           ListTile(
               //leading: const Icon(Icons.business_sharp),
-              leading: const Icon(Icons.event),
+              leading: const Icon(Icons.music_note),
               iconColor: Colors.white,
               title: const Text(
                 "Eventos",

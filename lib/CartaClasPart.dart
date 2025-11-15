@@ -1,3 +1,5 @@
+import 'CartaUsuario.dart';
+import 'Chat_Indiv.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,6 +22,7 @@ class CartaClasPart extends StatefulWidget {
   const CartaClasPart({
     super.key,
     required this.foto,
+    required this.idUsuario,
     required this.titulo,
     required this.descripcion,
     required this.onChatPressed,
@@ -28,7 +31,6 @@ class CartaClasPart extends StatefulWidget {
     required this.nombre,
     required this.apellido,
     required this.horasDisp,
-    required this.idUsuario,
     //required this.editable,
     required this.id,
 
@@ -40,12 +42,46 @@ class CartaClasPart extends StatefulWidget {
 
 class _CartaClasPartState extends State<CartaClasPart> {
   late String _userEmail;
+  late String _titulo;
+  late String _descripcion;
+  late int _horasDisp;
+  late bool _negociable;
+  late int _coste;
   bool _isEditable = false;
 
   @override
   void initState() {
     super.initState();
+    _titulo = widget.titulo;
+    _descripcion = widget.descripcion;
+    _horasDisp = widget.horasDisp;
+    _negociable = widget.negociable;
+    _coste = widget.coste;
     _loadUserEmail();
+  }
+
+  void _navigateToUserProfile() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CartaUsuario(
+          idUsuario: widget.idUsuario,
+          onContactPressed: _openChat,
+        ),
+      ),
+    );
+  }
+
+  void _openChat() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatPersonal(
+          otherUserName: '${widget.nombre} ${widget.apellido}',
+        ),
+      ),
+    );
+    widget.onChatPressed();
   }
 
   Future<void> _loadUserEmail() async {
@@ -55,6 +91,61 @@ class _CartaClasPartState extends State<CartaClasPart> {
       _isEditable = _userEmail == widget.idUsuario;
     });
   }
+
+  Future<void> _navigateToEdit() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CartaClasPartEdit(
+          // Pasamos los datos actuales a la pantalla de edición
+          id: widget.id,
+          idUsuario: widget.idUsuario,
+          titulo: _titulo,
+          descripcion: _descripcion,
+          horasDisp: _horasDisp,
+          negociable: _negociable,
+          coste: _coste,
+          nombre: widget.nombre,
+          apellido: widget.apellido,
+          foto: widget.foto,
+        ),
+      ),
+    );
+
+    // Si la pantalla de edición devolvió 'true', recargamos los datos.
+    if (result == true && mounted) {
+      _reloadData();
+    }
+  }
+
+  // --- CAMBIO 4: Nuevo método para recargar los datos desde Firestore ---
+  Future<void> _reloadData() async {
+    try {
+      DocumentSnapshot updatedDoc = await FirebaseFirestore.instance
+          .collection('ClasPart')
+          .doc(widget.id)
+          .get();
+
+      if (updatedDoc.exists) {
+        final data = updatedDoc.data() as Map<String, dynamic>;
+
+        // Actualizamos las variables de estado, lo que redibujará la UI.
+        setState(() {
+          _titulo = data['Titulo'];
+          _descripcion = data['Descripcion'];
+          _horasDisp = data['HorasDisp'];
+          _negociable = data['Negociable'];
+          _coste = data['Coste'];
+        });
+      }
+    } catch (e) {
+      print("Error al recargar los datos de la clase: $e");
+    }
+  }
+
+  String comprobarCoste(int coste) {
+    return '$coste €/h';
+  }
   String comprobarNegociable(bool negociable) {
     return negociable != true ?/*??*/ 'Precio negociable': '';
   }
@@ -62,38 +153,43 @@ class _CartaClasPartState extends State<CartaClasPart> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Colors.redAccent,
-        appBar: AppBar(
-          backgroundColor: Colors.red,
-          title: const Text(
-            'Clases particulares',
-            style: TextStyle(fontSize: 25, color: Colors.white),
-          ),
-          iconTheme: IconThemeData(color: Colors.white),
+      backgroundColor: Colors.redAccent,
+      appBar: AppBar(
+        backgroundColor: Colors.red,
+        title: const Text(
+          'Clases particulares',
+          style: TextStyle(fontSize: 25, color: Colors.white),
         ),
-        drawer: Cajon(),
-        body: Padding(
-          padding: const EdgeInsets.all(15.0),
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width - 30, // Ajusta el ancho aquí
-            child: Card(
-              //margin: EdgeInsets.all(15.0),
-              //color: Colors.redAccent,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
+      drawer: Cajon(),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(15.0),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height - 30,
+          width: MediaQuery.of(context).size.width - 30,
+          child: Card(
+            //margin: EdgeInsets.all(15.0),
+            //color: Colors.redAccent,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: _isEditable ? null : _navigateToUserProfile, // Solo se activa si no es tu anuncio
+                      child: CircleAvatar(
                         backgroundImage: AssetImage('assets/default_user.jpg'),
                         radius: 50,
                       ),
-                      SizedBox(width: 20),
-                      Column(
+                    ),
+                    SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            widget.titulo,
+                            _titulo,
                             style: TextStyle(
                               fontSize: 23.0,
                               fontWeight: FontWeight.bold,
@@ -107,127 +203,79 @@ class _CartaClasPartState extends State<CartaClasPart> {
                             ),
                           ),
                         ],
-                      ),
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      ),),
+                  ],
+                ),
+                GestureDetector(
+                  onTap: _isEditable ? null : _navigateToUserProfile, // Solo se activa si no es tu anuncio
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 13),
                     child: Text(
                       '${widget.nombre}, ${widget.apellido}',
-                      style: TextStyle(fontSize: 16.0),
+                      style: TextStyle(
+                        fontSize: 17.0,
+                      ),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8.0, vertical: 10.0),
-                    child: Text(
-                      'Disponibilidad: ${widget.horasDisp}',
-                      style: TextStyle(fontSize: 16.0),
-                    ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0, vertical: 10.0),
+                  child: Text(
+                    'Disponibilidad: $_horasDisp',
+                    style: TextStyle(fontSize: 16.0),
                   ),
-                  // Padding(
-                  //   padding: const EdgeInsets.symmetric(
-                  //       horizontal: 8.0, vertical: 10.0),
-                  //   child: FutureBuilder<String>(
-                  //     future: getAddressFromGeoPoint(widget.ubicacion),
-                  //     builder: (context, snapshot) {
-                  //       if (snapshot.connectionState ==
-                  //           ConnectionState.waiting) {
-                  //         return CircularProgressIndicator();
-                  //       } else if (snapshot.hasError) {
-                  //         return Text('Error: ${snapshot.error}');
-                  //       } else {
-                  //         final address =
-                  //             snapshot.data ?? 'Dirección no disponible';
-                  //         final uri = generateGoogleMapsUri(widget.ubicacion);
-                  //         return GestureDetector(
-                  //           onTap: () async {
-                  //             if (await canLaunchUrl(uri)) {
-                  //               await launchUrl(uri);
-                  //             } else {
-                  //               throw 'Could not launch $uri';
-                  //             }
-                  //           },
-                  //           child: Text(
-                  //             'Ubicación: $address',
-                  //             style: TextStyle(
-                  //               fontSize: 16.0,
-                  //               color: Colors.blue,
-                  //               decoration: TextDecoration.underline,
-                  //             ),
-                  //           ),
-                  //         );
-                  //       }
-                  //     },
-                  //   ),
-                  // ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8.0, vertical: 10.0),
-                    child: Text(
-                      widget.descripcion,
-                      style: TextStyle(fontSize: 16.0),
-                    ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0, vertical: 10.0),
+                  child: Text(
+                    _descripcion,
+                    style: TextStyle(fontSize: 16.0),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
-        floatingActionButton: _isEditable
-            ? Stack(
-          children: [
-            Positioned(
-              bottom: 10,
-              right: 10,
-              child: FloatingActionButton.extended(
-                backgroundColor: Colors.red,
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CartaClasPartEdit(
-                        idUsuario: widget.idUsuario,
-                        foto: widget.foto,
-                        nombre: widget.nombre,
-                        apellido: widget.apellido,
-                        titulo: widget.titulo,
-                        descripcion: widget.descripcion,
-                        coste: widget.coste,
-                        negociable: widget.negociable,
-                        horasDisp: widget.horasDisp,
+      ),
+      floatingActionButton: _isEditable
+          ? Stack(
+        children: [
+          Positioned(
+            bottom: 10,
+            right: 10,
+            child: FloatingActionButton.extended(
+              backgroundColor: Colors.red,
+              onPressed: _navigateToEdit, // --- CAMBIO 6: Llamar al nuevo método ---
+              label: Text('Editar...', style: TextStyle(color: Colors.white, fontSize: 20)),
+              icon: Icon(Icons.edit, color: Colors.white),
+            ),
+          ),
+        ],
+      )
+          : Stack(
+        children: [
+          Positioned(
+            bottom: 10,
+            right: 10,
+            child: FloatingActionButton.extended(
+              backgroundColor: Colors.red,
+              onPressed: _openChat,
+              label: Text('Ponte en contacto',
+                  style: TextStyle(color: Colors.white, fontSize: 20)),
+              icon: Icon(
+                Icons.question_answer,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
 
-                        id: widget.id,
-                      ),
-                    ),
-                  );
-                },
-                label: Text('Editar...',
-                    style: TextStyle(color: Colors.white, fontSize: 20)),
-                icon: Icon(Icons.edit, color: Colors.white),
-              ),
-            ),
-          ],
-        )
-            : Stack(
-          children: [
-            Positioned(
-              bottom: 10,
-              right: 10,
-              child: FloatingActionButton.extended(
-                backgroundColor: Colors.red,
-                onPressed: widget.onChatPressed,
-                label: Text('Ponte en contacto',
-                    style: TextStyle(color: Colors.white, fontSize: 20)),
-                icon: Icon(
-                  Icons.question_answer,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
+
+
+    );
   }
 }
 
@@ -272,7 +320,7 @@ class _CartaClasPartEditState extends State<CartaClasPartEdit> {
   late TextEditingController _descripcionController;
   late TextEditingController _horasDispController;
   late TextEditingController _costeController;
-  bool _negociable = false;
+  late bool _negociable;
 
   @override
   void initState() {
@@ -286,7 +334,7 @@ class _CartaClasPartEditState extends State<CartaClasPartEdit> {
     _negociable = widget.negociable;
   }
 
-  Future<void> _updateClase() async {
+  Future<void> _updateClasPart() async {
     try {
       // Show loading indicator
       ScaffoldMessenger.of(context).showSnackBar(
@@ -353,13 +401,13 @@ class _CartaClasPartEditState extends State<CartaClasPartEdit> {
 
       // Check if this is a new document (placeholder id)
       final isNewDocument = widget.id == 'id' || widget.id.isEmpty;
-      
+
       if (isNewDocument) {
         // Use Firestore's auto-generated document ID (random and guaranteed unique)
         // This is the most efficient approach - no counter needed, no collisions possible
         final docRef = FirebaseFirestore.instance.collection('ClasPart').doc();
         final autoGeneratedId = docRef.id;
-        
+
         // Create new document with auto-generated ID
         // Store the auto-generated ID as id field for consistency with existing code
         await docRef.set({
@@ -371,7 +419,7 @@ class _CartaClasPartEditState extends State<CartaClasPartEdit> {
           'Coste': coste,
           'IdUsuario': widget.idUsuario,
         });
-        
+
         // Show success message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -381,7 +429,7 @@ class _CartaClasPartEditState extends State<CartaClasPartEdit> {
               duration: Duration(seconds: 2),
             ),
           );
-          
+
           // Navigate back after creating
           Navigator.pop(context);
         }
@@ -418,7 +466,7 @@ class _CartaClasPartEditState extends State<CartaClasPartEdit> {
             );
 
             // Navigate back after updating
-            Navigator.pop(context);
+            Navigator.pop(context, true);
           }
         } else {
           // Handle the case where the document is not found
@@ -451,139 +499,140 @@ class _CartaClasPartEditState extends State<CartaClasPartEdit> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Colors.redAccent,
-        appBar: AppBar(
-          backgroundColor: Colors.red,
-          title: const Text(
-            'Clases particulares',
-            style: TextStyle(fontSize: 25, color: Colors.white),
-          ),
-          iconTheme: IconThemeData(color: Colors.white),
+      backgroundColor: Colors.redAccent,
+      resizeToAvoidBottomInset: true,
+      appBar: AppBar(
+        backgroundColor: Colors.red,
+        title: const Text(
+          'Clases particulares',
+          style: TextStyle(fontSize: 25, color: Colors.white),
         ),
-        //drawer: Cajon(),
-        body: Padding(
-          padding: const EdgeInsets.all(15.0),
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width - 30, // Ajusta el ancho aquí
-            child: Card(
-              //margin: EdgeInsets.all(15.0),
-              //color: Colors.redAccent,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundImage: AssetImage('assets/default_user.jpg'),
-                        radius: 50,
+        iconTheme: IconThemeData(color: Colors.white),
+      ),
+      //drawer: Cajon(),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(15.0),
+        child: SizedBox(
+          width: MediaQuery.of(context).size.width - 30, // Ajusta el ancho aquí
+          child: Card(
+            //margin: EdgeInsets.all(15.0),
+            //color: Colors.redAccent,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundImage: AssetImage('assets/default_user.jpg'),
+                      radius: 50,
+                    ),
+                    SizedBox(width: 20),
+                    Expanded(
+                      child:
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.titulo,
+                            style: TextStyle(
+                              fontSize: 23.0,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextField(
+                            controller: _tituloController,
+                            style: TextStyle(
+                              fontSize: 17.0,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            decoration: InputDecoration(labelText: 'Título'),
+                          ),
+                        ],
                       ),
-                      SizedBox(width: 20),
-                      Expanded(
-                        child:
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 13),
+                  child: Text(
+                    '${widget.nombre}, ${widget.apellido}',
+                    style: TextStyle(fontSize: 16.0),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0, vertical: 10.0),
+                  child: TextField(
+                    controller: _horasDispController,
+                    decoration: InputDecoration(labelText: 'Horas disponibles'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 8.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              widget.titulo,
-                              style: TextStyle(
-                                fontSize: 23.0,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            Checkbox(
+                              value: _negociable,
+                              onChanged: (bool? value) {
+                                setState(() {
+                                  _negociable = value ?? false;
+                                });
+                              },
                             ),
-                            TextField(
-                              controller: _tituloController,
-                              style: TextStyle(
-                                fontSize: 17.0,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              decoration: InputDecoration(labelText: 'Título'),
-                            ),
+                            Flexible(child: const Text('Negociable')),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Text(
-                      '${widget.nombre}, ${widget.apellido}',
-                      style: TextStyle(fontSize: 16.0),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8.0, vertical: 10.0),
-                    child: TextField(
-                      controller: _horasDispController,
-                      decoration: InputDecoration(labelText: 'Horas disponibles'),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 8.0),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Checkbox(
-                                value: _negociable,
-                                onChanged: (bool? value) {
-                                  setState(() {
-                                    _negociable = value ?? false;
-                                  });
-                                },
-                              ),
-                              Flexible(child: const Text('Negociable')),
-                            ],
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 3,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 8.0),
+                        child: TextField(
+                          controller: _costeController,
+                          decoration: InputDecoration(
+                            labelText: 'Coste (€)',
                           ),
+                          keyboardType: TextInputType.number,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        flex: 3,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 8.0),
-                          child: TextField(
-                            controller: _costeController,
-                            decoration: InputDecoration(
-                              labelText: 'Coste (€)',
-                            ),
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8.0, vertical: 10.0),
-                    child: TextField(
-                      controller: _descripcionController,
-                      style: TextStyle(
-                        fontSize: 17.0,
-                      ),
-                      decoration: InputDecoration(labelText: 'Descripción'),
-                      maxLines: 3,
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8.0, vertical: 10.0),
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                      onPressed: _updateClase,
-                      child: Text('Guardar', style: TextStyle(fontSize: 20, color: Colors.white)),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0, vertical: 10.0),
+                  child: TextField(
+                    controller: _descripcionController,
+                    style: TextStyle(
+                      fontSize: 17.0,
                     ),
+                    decoration: InputDecoration(labelText: 'Descripción'),
+                    maxLines: 3,
                   ),
-                ],
-              ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0, vertical: 10.0),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    onPressed: _updateClasPart,
+                    child: Text('Guardar', style: TextStyle(fontSize: 20, color: Colors.white)),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
+      ),
 
     );
   }

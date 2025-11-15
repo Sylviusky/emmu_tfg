@@ -115,6 +115,8 @@ flutter:
     - assets/logobtr.png
     - assets/logortr.png
     - assets/default_user.jpg
+    - assets/default_chat_example.jpg
+    - assets/default_chats_page.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

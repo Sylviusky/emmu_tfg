@@ -2,21 +2,11 @@ import 'package:flutter/material.dart';
 import 'CajonAppBar.dart';
 
 class ChatPersonal extends StatelessWidget {
-  final String imagenUsuario;
-  final String titulo;
-  final String descripcion;
-  final VoidCallback onChatPressed;
-  final int coste;
-  final bool negociable;
+  final String otherUserName;
 
   const ChatPersonal({
     super.key,
-    required this.imagenUsuario,
-    required this.titulo,
-    required this.descripcion,
-    required this.onChatPressed,
-    required this.coste,
-    required this.negociable,
+    required this.otherUserName,
   });
 
   @override
@@ -25,69 +15,88 @@ class ChatPersonal extends StatelessWidget {
       backgroundColor: Colors.redAccent,
       appBar: AppBar(
         backgroundColor: Colors.red,
-        title: const Text(
-          'Clases particulares',
-          style: TextStyle(
-            fontSize: 25,
+        title: Text(
+          otherUserName,
+          style: const TextStyle(
+            fontSize: 22,
             color: Colors.white,
           ),
         ),
-        iconTheme: IconThemeData(
-          color: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.menu, color: Colors.white),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+              tooltip: 'Menú',
+            ),
+          ),
+        ],
       ),
       drawer: Cajon(),
-      body: Card(
-        margin: EdgeInsets.all(15.0),
-        //color: Colors.redAccent,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundImage: AssetImage('assets/default_user.jpg'),
-                  radius: 50,
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AspectRatio(
+                aspectRatio: 9 / 16,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    'assets/default_chat_example.jpg',
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.white,
+                        child: const Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.chat_bubble_outline,
+                                size: 120,
+                                color: Colors.black38,
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'Añade aquí tu imagen de chat por defecto',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-                SizedBox(width: 20),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      titulo,
-                      style: TextStyle(
-                        fontSize: 23.0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Presupuesto: $coste',
-                      style: TextStyle(
-                        fontSize: 17.0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Vista previa del chat',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Text(
-                descripcion,
-                style: TextStyle(fontSize: 16.0),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ElevatedButton(
-                onPressed: onChatPressed,
-                child: Text('Chatear con el usuario'),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
+/*
+  Aquí podrás añadir la lógica real del chat en el futuro.
+*/
