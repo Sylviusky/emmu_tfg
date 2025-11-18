@@ -71,6 +71,7 @@ class PlaceAutocompleteService {
     String language = 'es',
     String types = 'geocode',
     String? components,
+    http.Client? client,
   }) async {
     if (!isGoogleMapsApiKeyConfigured) {
       throw Exception(
@@ -93,7 +94,15 @@ class PlaceAutocompleteService {
       ),
     );
 
-    final response = await http.get(uri);
+    final http.Client httpClient = client ?? http.Client();
+    http.Response response;
+    try {
+      response = await httpClient.get(uri);
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
     final data = json.decode(response.body) as Map<String, dynamic>;
     final status = data['status'] as String? ?? 'ERROR';
 
@@ -112,6 +121,7 @@ class PlaceAutocompleteService {
     String placeId, {
     required String sessionToken,
     String language = 'es',
+    http.Client? client,
   }) async {
     if (!isGoogleMapsApiKeyConfigured) {
       throw Exception(
@@ -131,7 +141,15 @@ class PlaceAutocompleteService {
       ),
     );
 
-    final response = await http.get(uri);
+    final http.Client httpClient = client ?? http.Client();
+    http.Response response;
+    try {
+      response = await httpClient.get(uri);
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
     final data = json.decode(response.body) as Map<String, dynamic>;
     final status = data['status'] as String? ?? 'ERROR';
     if (status != 'OK') {
@@ -162,6 +180,7 @@ class LocationPicker {
     String? componentsFilter,
   }) async {
     final TextEditingController controller = TextEditingController();
+    final navigator = Navigator.of(context);
     SelectedLocation? selectedLocation;
     List<PlacePrediction> predictions = [];
     bool isLoading = false;
@@ -216,6 +235,7 @@ class LocationPicker {
           prediction.placeId,
           sessionToken: sessionToken,
         );
+        if (!navigator.mounted) return;
         selectedLocation = SelectedLocation(
           latitude: details.latitude,
           longitude: details.longitude,
@@ -223,7 +243,7 @@ class LocationPicker {
               ? details.description
               : prediction.description,
         );
-        Navigator.pop(context);
+        navigator.pop();
       } catch (e) {
         setState(() {
           error = e.toString();
@@ -334,6 +354,7 @@ class _LocationAutocompleteFieldState extends State<LocationAutocompleteField> {
 
   @override
   Widget build(BuildContext context) {
+    final messenger = ScaffoldMessenger.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -368,7 +389,8 @@ class _LocationAutocompleteFieldState extends State<LocationAutocompleteField> {
                 types: 'address',
               );
             } catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
+              if (!mounted) return [];
+              messenger.showSnackBar(
                 SnackBar(
                   content: Text(
                     e.toString().replaceFirst('Exception: ', ''),
@@ -392,6 +414,7 @@ class _LocationAutocompleteFieldState extends State<LocationAutocompleteField> {
                 prediction.placeId,
                 sessionToken: _sessionToken,
               );
+              if (!mounted) return;
               widget.controller.text = details.description;
               widget.onLocationSelected?.call(
                 SelectedLocation(
@@ -401,7 +424,8 @@ class _LocationAutocompleteFieldState extends State<LocationAutocompleteField> {
                 ),
               );
             } catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
+              if (!mounted) return;
+              messenger.showSnackBar(
                 SnackBar(
                   content: Text(
                     e.toString().replaceFirst('Exception: ', ''),

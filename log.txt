@@ -1,0 +1,5 @@
+2025-11-18 Cleanup
+- Removed `lib/app.dart` and redundant sample screens (`home.dart`, `home_page.dart`) so the only entry point is `main.dart`.
+- Deleted legacy demo helpers (`guest_book.dart`, `guest_book_message.dart`, `yes_no_selection.dart`, `src/`, `codigo pruebas/`, `dataconnect_generated/`, `ComparativaVSC.dart`, `Pruebas.dart`, `CartaClasPartOrig.dart`, `AppCheck.kts`) that were not referenced by the app.
+- Simplified `lib/app_state.dart` to only track email verification status and refreshed `auth_gate.dart`/`main.dart` to drop obsolete comments and imports.
+
