@@ -26,7 +26,8 @@ class _ClasesPageState extends State<ClasesPage> {
   _loadUserEmail() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _userEmail = prefs.getString('userEmail');
+      final email = prefs.getString('userEmail');
+      _userEmail = email != null ? email.toLowerCase() : null;
     });
   }
 
@@ -45,9 +46,8 @@ class _ClasesPageState extends State<ClasesPage> {
         body: _userEmail == null
             ? Center(child: CircularProgressIndicator())
             : StreamBuilder<QuerySnapshot>(
-                stream: clasPart
-                    .where('IdUsuario', isNotEqualTo: _userEmail)
-                    .snapshots(),
+                //CARGA TODAS LAS CLASES Y FILTRAMOS EN EL CLIENTE PARA MANEJAR MAYUSCULAS/MINUSCULAS
+                stream: clasPart.snapshots(),
                 builder: (BuildContext context,
                     AsyncSnapshot<QuerySnapshot> snapshot) {
                   if (snapshot.hasError) {
@@ -58,88 +58,151 @@ class _ClasesPageState extends State<ClasesPage> {
                     return Center(child: CircularProgressIndicator());
                   }
 
-                  final data = snapshot.requireData;
+                  final allData = snapshot.requireData;
+                  // Filtrar en el cliente normalizando emails para manejar mayúsculas/minúsculas
+                  // Mostrar todas las clases EXCEPTO las del usuario logueado
+                  final List<QueryDocumentSnapshot> filteredDocs;
+                  if (_userEmail == null || _userEmail!.isEmpty) {
+                    // Si no hay usuario logueado, mostrar todas las clases
+                    filteredDocs = allData.docs.toList();
+                  } else {
+                    final userEmailLower = _userEmail!.toLowerCase();
+                    filteredDocs = allData.docs.where((doc) {
+                      final docIdUsuario = doc['IdUsuario']?.toString().toLowerCase() ?? '';
+                      // Si no hay IdUsuario o está vacío, no mostrar (documento inválido)
+                      if (docIdUsuario.isEmpty) return false;
+                      // Si es el usuario logueado, no mostrar (excluir del listado)
+                      if (docIdUsuario == userEmailLower) return false;
+                      // Mostrar todos los demás
+                      return true;
+                    }).toList();
+                  }
 
-                  return ListView.builder(
-                    itemCount: data.size,
+                  return ListView.separated(
+                    itemCount: filteredDocs.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.black12),
                     itemBuilder: (context, index) {
-                      var clasPart = data.docs[index];
-                      var idUsuario = clasPart['IdUsuario']
-                          .toString(); // Asumiendo que tienes un campo userId en ClasPart
-                      //No tengo userID ni en clases ni eventos. Hace falta??? PREGUNTAR
+                      final clasPart = filteredDocs[index];
+                      final idUsuario = clasPart['IdUsuario'].toString().toLowerCase();
 
                       return FutureBuilder<QuerySnapshot>(
+                        // Cargar todos los usuarios y filtrar en el cliente para manejar mayúsculas/minúsculas
                         future: FirebaseFirestore.instance
                             .collection('Usuario')
-                            .where('email', isEqualTo: idUsuario)
                             .get(),
                         builder: (context, userSnapshot) {
                           if (userSnapshot.hasError) {
-                            return Center(
-                                child: Text('Error: ${userSnapshot.error}'));
+                            // Si hay error, mostrar clase con datos por defecto
+                            return _buildClaseItem(clasPart, null);
                           }
 
                           if (userSnapshot.connectionState ==
                               ConnectionState.waiting) {
-                            return Center(child: CircularProgressIndicator());
+                            return const Center(child: CircularProgressIndicator());
                           }
 
-                          var userData = userSnapshot.data?.docs.first;
-
-                          if (userData == null) {
-                            return Center(child: Text('Usuario no encontrado'));
-                          }
-
-                          return ListTile(
-                            title: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(data.docs[index]['Titulo']),
-                                SizedBox(height: 8.0),
-                                Text(data.docs[index]['Descripcion']),
-                              ],
-                            ),
-                            trailing: Container(
-                              width: 200,
-                              alignment: Alignment.centerRight,
-                              child: Text(
-                                '${data.docs[index]['Coste']} €',
-                                style: TextStyle(
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 25),
-                              ),
-                            ),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => CartaClasPart(
-                                    foto: userData['Foto'] ?? '',
-                                    titulo: clasPart['Titulo'],
-                                    descripcion: clasPart['Descripcion'],
-                                    coste: clasPart['Coste'],
-                                    negociable: clasPart['Negociable'],
-                                    nombre: userData['Nombre'],
-                                    apellido: userData['Apellido'],
-                                    horasDisp: clasPart['HorasDisp'],
-                                    idUsuario: clasPart['IdUsuario'],
-                                    id: clasPart['id'].toString(),
-                                    //editable: false,
-                                    onChatPressed: () {
-                                      // Aquí puedes agregar la lógica para navegar a la página de chat
-                                    },
-                                  ),
-                                ),
+                          // Buscar usuario normalizando emails
+                          QueryDocumentSnapshot? userData;
+                          if (userSnapshot.hasData && userSnapshot.data!.docs.isNotEmpty) {
+                            final allUsers = userSnapshot.data!.docs;
+                            try {
+                              userData = allUsers.firstWhere(
+                                (user) {
+                                  final userEmail = user['email']?.toString().toLowerCase() ?? '';
+                                  return userEmail == idUsuario;
+                                },
                               );
-                            },
-                          );
+                            } catch (e) {
+                              // Usuario no encontrado, userData quedará null
+                              userData = null;
+                            }
+                          }
+                          
+                          // Si no encontramos usuario, userData será null
+                          // Pero aún así mostraremos la clase con datos por defecto
+                          return _buildClaseItem(clasPart, userData);
                         },
                       );
                     },
                   );
                 },
               ),
+    );
+  }
+
+  Widget _buildClaseItem(QueryDocumentSnapshot clasPart, QueryDocumentSnapshot? userData) {
+    final idUsuario = clasPart['IdUsuario'].toString().toLowerCase();
+    
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CartaClasPart(
+              foto: userData?['Foto'] ?? 'assets/default_user.jpg',
+              titulo: clasPart['Titulo'],
+              descripcion: clasPart['Descripcion'],
+              coste: clasPart['Coste'],
+              negociable: clasPart['Negociable'],
+              nombre: userData?['Nombre'] ?? 'Usuario',
+              apellido: userData?['Apellido'] ?? '',
+              horasDisp: clasPart['HorasDisp'],
+              idUsuario: userData?['email'] ?? idUsuario,
+              id: clasPart['id'].toString(),
+              onChatPressed: () {},
+            ),
+          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    clasPart['Titulo'],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    clasPart['Descripcion'],
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 140,
+              alignment: Alignment.centerRight,
+              child: Text(
+                '${clasPart['Coste']} €',
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 25,
+                ),
+              ),
+            )
+          ],
+        ),
+      ),
     );
   }
 }

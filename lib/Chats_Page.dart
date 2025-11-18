@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'CajonAppBar.dart';
+import 'Chat_Indiv.dart';
 
 class Chats extends StatelessWidget {
   const Chats({super.key});
@@ -23,40 +24,51 @@ class Chats extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              AspectRatio(
-                aspectRatio: 9 / 16,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(
-                    'assets/default_chats_page.jpg',
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.white,
-                        child: const Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.chat,
-                                size: 120,
-                                color: Colors.black38,
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'Añade aquí tu imagen de chats por defecto',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: 16,
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const ChatPersonal(otherUserName: 'Chat de ejemplo'),
+                    ),
+                  );
+                },
+                child: AspectRatio(
+                  aspectRatio: 9 / 16,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.asset(
+                      'assets/default_chats_page.jpg',
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.white,
+                          child: const Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.chat,
+                                  size: 120,
+                                  color: Colors.black38,
                                 ),
-                              ),
-                            ],
+                                SizedBox(height: 16),
+                                Text(
+                                  'Añade aquí tu imagen de chats por defecto',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.black54,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),

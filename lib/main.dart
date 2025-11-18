@@ -19,8 +19,12 @@ import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 AndroidProvider _getAndroidProvider() {
-  // Use Play Integrity for distribution across devices without per-device tokens
-  return AndroidProvider.playIntegrity;
+  // Use Play Integrity for release builds, but allow the debug provider so that
+  // emulators/dev devices show the App Check debug token in the logs.
+  if (kReleaseMode) {
+    return AndroidProvider.playIntegrity;
+  }
+  return AndroidProvider.debug;
 }
 
 Future<void> main() async {

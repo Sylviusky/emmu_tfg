@@ -3,9 +3,9 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'CartaUsuario.dart';
 import 'Chat_Indiv.dart';
+import 'location_picker.dart';
 
 import 'CajonAppBar.dart';
 
@@ -13,7 +13,7 @@ class CartaEvento extends StatefulWidget {
   final String idUsuario;
   final String titulo;
   final String descripcion;
-  final GeoPoint ubicacion;
+  final GeoPoint? ubicacion;
   final Timestamp fecha;
   final VoidCallback onChatPressed;
   final int presupuesto;
@@ -22,14 +22,13 @@ class CartaEvento extends StatefulWidget {
   final String apellido;
   final String foto;
   final String docId;
-
+  final String? direccionTexto;
   const CartaEvento({
     super.key,
     required this.docId,
     required this.idUsuario,
     required this.titulo,
     required this.descripcion,
-    required this.ubicacion,
     required this.fecha,
     required this.onChatPressed,
     required this.presupuesto,
@@ -37,6 +36,8 @@ class CartaEvento extends StatefulWidget {
     required this.nombre,
     required this.apellido,
     required this.foto,
+    this.ubicacion,
+    this.direccionTexto,
   });
 
   @override
@@ -44,28 +45,43 @@ class CartaEvento extends StatefulWidget {
 }
 
 class _CartaEventoState extends State<CartaEvento> {
-  late String _userEmail;
-  late String _titulo;
-  late String _descripcion;
-  late GeoPoint _ubicacion;
-  late Timestamp _fecha;
-  late int _presupuesto;
-  late bool _tienePresupuesto;
-
-  late Future<String> _addressFuture;
+  String _userEmail = '';
+  String _titulo = '';
+  String _descripcion = '';
+  GeoPoint? _ubicacion;
+  Timestamp? _fecha;
+  int _presupuesto = 0;
+  bool _tienePresupuesto = false;
+  String? _direccionTexto;
+  String _addressText = '';
   bool _isEditable = false;
 
   @override
   void initState() {
     super.initState();
-    _titulo = widget.titulo;
-    _descripcion = widget.descripcion;
-    _ubicacion = widget.ubicacion;
-    _fecha = widget.fecha;
-    _presupuesto = widget.presupuesto;
-    _tienePresupuesto = widget.tienePresupuesto;
+    try {
+      _titulo = widget.titulo;
+      _descripcion = widget.descripcion;
+      _ubicacion = widget.ubicacion;
+      _fecha = widget.fecha;
+      _presupuesto = widget.presupuesto;
+      _tienePresupuesto = widget.tienePresupuesto;
+      _direccionTexto = widget.direccionTexto;
+      if (_direccionTexto?.trim().isNotEmpty == true) {
+        _addressText = _direccionTexto!.trim();
+      } else if (_ubicacion != null) {
+        _addressText = _formatCoordinates(_ubicacion!);
+      } else {
+        _addressText = 'Ubicación no disponible';
+      }
+    } catch (e) {
+      print('Error inicializando datos en CartaEvento: $e');
+      // Establecer valores por defecto en caso de error
+      _titulo = 'Error al cargar';
+      _descripcion = 'Error al cargar los datos del evento';
+      _addressText = 'Ubicación no disponible';
+    }
     _loadUserEmail();
-    _addressFuture = getAddressFromGeoPoint(_ubicacion);
   }
 
   //¿Vale la pena eliminar esta comprobación? Ya se hace para cargar el listado de Eventos
@@ -76,8 +92,8 @@ class _CartaEventoState extends State<CartaEvento> {
   Future<void> _loadUserEmail() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _userEmail = prefs.getString('userEmail') ?? '';
-      _isEditable = _userEmail == widget.idUsuario;
+      _userEmail = (prefs.getString('userEmail') ?? '').toLowerCase();
+      _isEditable = _userEmail == widget.idUsuario.toLowerCase();
     });
   }
 
@@ -105,7 +121,59 @@ class _CartaEventoState extends State<CartaEvento> {
     widget.onChatPressed();
   }
 
+  Widget _buildProfileAvatar() {
+    final foto = widget.foto.trim();
+    if (foto.isEmpty) {
+      return const Icon(Icons.person, size: 50, color: Colors.grey);
+    }
+
+    if (foto.startsWith('http')) {
+      return ClipOval(
+        child: Image.network(
+          foto,
+          width: 100,
+          height: 100,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(Icons.person, size: 50, color: Colors.grey);
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return const CircularProgressIndicator(color: Colors.red);
+          },
+        ),
+      );
+    }
+
+    final assetPath = foto.contains('default_user')
+        ? 'assets/default_user.jpg'
+        : (foto.startsWith('assets/') ? foto : '');
+
+    if (assetPath.isNotEmpty) {
+      return ClipOval(
+        child: Image.asset(
+          assetPath,
+          width: 100,
+          height: 100,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+
+    return const Icon(Icons.person, size: 50, color: Colors.grey);
+  }
+
   Future<void> _navigateToEdit() async {
+    if (_ubicacion == null || _fecha == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: Datos del evento incompletos'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -117,11 +185,12 @@ class _CartaEventoState extends State<CartaEvento> {
           // Pasamos los datos actuales (de las variables de estado) a la pantalla de edición
           titulo: _titulo,
           descripcion: _descripcion,
-          ubicacion: _ubicacion,
-          fecha: _fecha,
+          ubicacion: _ubicacion!,
+          fecha: _fecha!,
           tienePresupuesto: _tienePresupuesto,
           presupuesto: _presupuesto,
           docId: widget.docId,
+          direccionTexto: _direccionTexto,
         ),
       ),
     );
@@ -146,19 +215,27 @@ class _CartaEventoState extends State<CartaEvento> {
         // Actualizamos las variables de estado con los nuevos datos,
         // lo que redibujará la UI automáticamente.
         setState(() {
-          _titulo = data['Titulo'];
-          _descripcion = data['Descripcion'];
-          _ubicacion = data['Ubicacion'];
-          _fecha = data['Fecha'];
-          _presupuesto = data['Presupuesto'];
-          _tienePresupuesto = data['TienePresupuesto'];
-          // Refrescamos la dirección si la ubicación cambió
-          _addressFuture = getAddressFromGeoPoint(_ubicacion);
+          _titulo = data['Titulo'] ?? '';
+          _descripcion = data['Descripcion'] ?? '';
+          _ubicacion = data['Ubicacion'] as GeoPoint?;
+          _fecha = data['Fecha'] as Timestamp?;
+          _presupuesto = data['Presupuesto'] ?? 0;
+          _tienePresupuesto = data['TienePresupuesto'] ?? false;
+          _direccionTexto = (data['DireccionTexto'] as String?)?.trim();
+          if (_ubicacion != null) {
+            _addressText = _direccionTexto?.isNotEmpty == true
+                ? _direccionTexto!
+                : _formatCoordinates(_ubicacion!);
+          }
         });
       }
     } catch (e) {
       print("Error al recargar los datos del evento: $e");
     }
+  }
+
+  String _formatCoordinates(GeoPoint geoPoint) {
+    return '${geoPoint.latitude.toStringAsFixed(6)}, ${geoPoint.longitude.toStringAsFixed(6)}';
   }
   Uri generateGoogleMapsUri(GeoPoint geoPoint) {
     final latitude = geoPoint.latitude;
@@ -167,23 +244,34 @@ class _CartaEventoState extends State<CartaEvento> {
         'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude');
   }
 
-  Future<String> getAddressFromGeoPoint(GeoPoint geoPoint) async {
-    final callable = FirebaseFunctions.instance.httpsCallable('reverseGeocode');
-    final response = await callable
-        .call({'lat': geoPoint.latitude, 'lng': geoPoint.longitude});
-    final data = response.data as Map;
-    final results = data['results'] as List<dynamic>?
-        ?? const <dynamic>[];
-    if (results.isEmpty) return 'Dirección no disponible';
-    return results.first['formatted_address'] as String? ?? 'Dirección no disponible';
-  }
-
   String comprobarPresupuesto(bool tienePresupuesto, int presupuesto) {
     return tienePresupuesto == 0 ? ' - €' : '$presupuesto€';
   }
 
   @override
   Widget build(BuildContext context) {
+    // Validar que los datos críticos estén disponibles
+    if (_fecha == null) {
+      return Scaffold(
+        backgroundColor: Colors.redAccent,
+        appBar: AppBar(
+          backgroundColor: Colors.red,
+          title: const Text(
+            'Evento',
+            style: TextStyle(fontSize: 25, color: Colors.white),
+          ),
+          iconTheme: const IconThemeData(color: Colors.white),
+        ),
+        drawer: const Cajon(),
+        body: const Center(
+          child: Text(
+            'Error: Datos del evento incompletos',
+            style: TextStyle(fontSize: 18, color: Colors.white),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.redAccent,
       appBar: AppBar(
@@ -192,9 +280,9 @@ class _CartaEventoState extends State<CartaEvento> {
           'Evento',
           style: TextStyle(fontSize: 25, color: Colors.white),
         ),
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      drawer: Cajon(),
+      drawer: const Cajon(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(15.0),
         child: SizedBox(
@@ -204,143 +292,132 @@ class _CartaEventoState extends State<CartaEvento> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-            Row(
-            children: [
-            GestureDetector(
-            onTap: _isEditable ? null : _navigateToUserProfile,
-              child: CircleAvatar(
-                backgroundImage: AssetImage('assets/default_user.jpg'),
-                radius: 50,
-              ),
-            ),
-            SizedBox(width: 20),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _titulo,
-                    style: TextStyle(
-                      fontSize: 23.0,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    comprobarPresupuesto(_tienePresupuesto, _presupuesto),
-                    style: TextStyle(
-                      fontSize: 23.0,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            ],
-          ),
-          GestureDetector(
-            onTap: _isEditable ? null : _navigateToUserProfile, // Solo se activa si no es tu anuncio
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 8.0, vertical: 13),
-              child: Text(
-                '${widget.nombre}, ${widget.apellido}',
-                style: TextStyle(fontSize: 16.0),
-              ),
-            ),
-          ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 8.0, vertical: 10.0),
-              child: Text(
-                'Fecha: ${DateFormat('dd/MM/yyyy').format(_fecha.toDate())}',
-                style: TextStyle(fontSize: 16.0),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 8.0, vertical: 10.0),
-              child: FutureBuilder<String>(
-                future: _addressFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState ==
-                      ConnectionState.waiting) {
-                    return CircularProgressIndicator();
-                  } else if (snapshot.hasError) {
-                    return Text('Error: ${snapshot.error}');
-                  } else {
-                    final address =
-                        snapshot.data ?? 'Dirección no disponible';
-                    final uri = generateGoogleMapsUri(_ubicacion);
-                    return GestureDetector(
-                      onTap: () async {
-                        if (await canLaunchUrl(uri)) {
-                          await launchUrl(uri);
-                        } else {
-                          throw 'Could not launch $uri';
-                        }
-                      },
-                      child: Text(
-                        'Ubicación: $address',
-                        style: TextStyle(
-                          fontSize: 16.0,
-                          color: Colors.blue,
-                          decoration: TextDecoration.underline,
-                        ),
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: _isEditable ? null : _navigateToUserProfile,
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.grey[300],
+                        child: _buildProfileAvatar(),
                       ),
-                    );
-                  }
-                },
-              ),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _titulo,
+                            style: const TextStyle(
+                              fontSize: 23.0,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            comprobarPresupuesto(_tienePresupuesto, _presupuesto),
+                            style: const TextStyle(
+                              fontSize: 23.0,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                GestureDetector(
+                  onTap: _isEditable ? null : _navigateToUserProfile,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8.0, vertical: 13),
+                    child: Text(
+                      '${widget.nombre}, ${widget.apellido}',
+                      style: const TextStyle(fontSize: 16.0),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0, vertical: 10.0),
+                  child: Text(
+                    'Fecha: ${DateFormat('dd/MM/yyyy').format(_fecha!.toDate())}',
+                    style: const TextStyle(fontSize: 16.0),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0, vertical: 10.0),
+                  child: GestureDetector(
+                    onTap: _ubicacion != null ? () async {
+                      final uri = generateGoogleMapsUri(_ubicacion!);
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri);
+                      } else {
+                        throw 'Could not launch $uri';
+                      }
+                    } : null,
+                    child: Text(
+                      'Ubicación: $_addressText',
+                      style: TextStyle(
+                        fontSize: 16.0,
+                        color: _ubicacion != null ? Colors.blue : Colors.black,
+                        decoration: _ubicacion != null 
+                            ? TextDecoration.underline 
+                            : TextDecoration.none,
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0, vertical: 10.0),
+                  child: Text(
+                    _descripcion,
+                    style: const TextStyle(fontSize: 16.0),
+                  ),
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 8.0, vertical: 10.0),
-              child: Text(
-                _descripcion,
-                style: TextStyle(fontSize: 16.0),
-              ),
-            ),
-            ],
           ),
         ),
       ),
-    ),
 
-    floatingActionButton: _isEditable
-    ? Stack(
-    children: [
-    Positioned(
-    bottom: 10,
-    right: 10,
-    child: FloatingActionButton.extended(
-    backgroundColor: Colors.red,
-    onPressed: _navigateToEdit, // --- CAMBIO 6: Llamar al nuevo método ---
-    label: Text('Editar...',
-    style: TextStyle(color: Colors.white, fontSize: 20)),
-    icon: Icon(Icons.edit, color: Colors.white),
-    ),
-    ),
-    ],
-    )
-        : Stack(
-    children: [
-    Positioned(
-    bottom: 10,
-    right: 10,
-    child: FloatingActionButton.extended(
-    backgroundColor: Colors.red,
-    onPressed: _openChat,
-    label: Text('Ponte en contacto',
-    style: TextStyle(color: Colors.white, fontSize: 20)),
-    icon: Icon(
-    Icons.question_answer,
-    color: Colors.white,
-    ),
-    ),
-    ),
-    ],
-    ),
+      floatingActionButton: _isEditable
+          ? Stack(
+        children: [
+          Positioned(
+            bottom: 10,
+            right: 10,
+            child: FloatingActionButton.extended(
+              backgroundColor: Colors.red,
+              onPressed: _navigateToEdit, // --- CAMBIO 6: Llamar al nuevo método ---
+              label: Text('Editar...',
+                  style: TextStyle(color: Colors.white, fontSize: 20)),
+              icon: Icon(Icons.edit, color: Colors.white),
+            ),
+          ),
+        ],
+      )
+          : Stack(
+        children: [
+          Positioned(
+            bottom: 10,
+            right: 10,
+            child: FloatingActionButton.extended(
+              backgroundColor: Colors.red,
+              onPressed: _openChat,
+              label: Text('Ponte en contacto',
+                  style: TextStyle(color: Colors.white, fontSize: 20)),
+              icon: Icon(
+                Icons.question_answer,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
 
     );
   }
@@ -358,6 +435,7 @@ class CartaEventoEdit extends StatefulWidget {
   final Timestamp fecha;
   final bool tienePresupuesto;
   final int presupuesto;
+  final String? direccionTexto;
 
   const CartaEventoEdit({
     super.key,
@@ -372,6 +450,7 @@ class CartaEventoEdit extends StatefulWidget {
     required this.fecha,
     required this.tienePresupuesto,
     required this.presupuesto,
+    this.direccionTexto,
   });
 
   @override
@@ -386,6 +465,7 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
   late TextEditingController _fechaController;
   late TextEditingController _presupuestoController;
   bool _tienePresupuesto = false;
+  SelectedLocation? _selectedLocation;
 
   @override
   void initState() {
@@ -394,43 +474,21 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
     _descripcionController = TextEditingController(text: widget.descripcion);
     // Format ubicacion as "latitude, longitude" for easier editing
     _ubicacionController = TextEditingController(
-        text: '${widget.ubicacion.latitude}, ${widget.ubicacion.longitude}');
+        text: widget.direccionTexto ??
+            '${widget.ubicacion.latitude}, ${widget.ubicacion.longitude}');
     _fechaController =
         TextEditingController(text: widget.fecha.toDate().toString());
     _presupuestoController =
         TextEditingController(text: widget.presupuesto.toString());
     _tienePresupuesto = widget.tienePresupuesto;
     _selectedDate = widget.fecha.toDate();
-  }
-
-  // Helper method to parse GeoPoint from string input
-  GeoPoint? _parseGeoPointFromString(String input) {
-    try {
-      // Try to parse format like "GeoPoint(latitude, longitude)" or "lat, lng"
-      final cleanInput = input.trim();
-
-      // Check if it's already in GeoPoint string format
-      if (cleanInput.startsWith('GeoPoint(')) {
-        final content = cleanInput.substring(9, cleanInput.length - 1);
-        final parts = content.split(',');
-        if (parts.length == 2) {
-          final lat = double.parse(parts[0].trim());
-          final lng = double.parse(parts[1].trim());
-          return GeoPoint(lat, lng);
-        }
-      } else {
-        // Try to parse as "lat, lng" format
-        final parts = cleanInput.split(',');
-        if (parts.length == 2) {
-          final lat = double.parse(parts[0].trim());
-          final lng = double.parse(parts[1].trim());
-          return GeoPoint(lat, lng);
-        }
-      }
-    } catch (e) {
-      print('Error parsing GeoPoint: $e');
-    }
-    return null;
+    _selectedLocation = SelectedLocation(
+      latitude: widget.ubicacion.latitude,
+      longitude: widget.ubicacion.longitude,
+      description: widget.direccionTexto ??
+          '${widget.ubicacion.latitude.toStringAsFixed(6)}, ${widget.ubicacion.longitude.toStringAsFixed(6)}',
+    );
+    _ubicacionController.text = _selectedLocation!.description;
   }
 
   Future<void> _updateEvento() async {
@@ -482,9 +540,11 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
 
       // Parse ubicacion - try to parse from string, otherwise keep original
       GeoPoint ubicacion = widget.ubicacion;
-      final parsedUbicacion = _parseGeoPointFromString(_ubicacionController.text.trim());
-      if (parsedUbicacion != null) {
-        ubicacion = parsedUbicacion;
+      if (_selectedLocation != null) {
+        ubicacion = GeoPoint(
+          _selectedLocation!.latitude,
+          _selectedLocation!.longitude,
+        );
       }
 
       // Convert selected date to Timestamp
@@ -509,8 +569,9 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
           'Fecha': fechaTimestamp,
           'TienePresupuesto': _tienePresupuesto,
           'Presupuesto': presupuesto,
-          'IdUsuario': widget.idUsuario,
-        });
+          'IdUsuario': widget.idUsuario.toLowerCase(),
+          'DireccionTexto': _selectedLocation?.description ?? _ubicacionController.text.trim() ?? '',
+          });
 
         // Show success message
         if (mounted) {
@@ -546,6 +607,7 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
             'Fecha': fechaTimestamp,
             'TienePresupuesto': _tienePresupuesto,
             'Presupuesto': presupuesto,
+            'DireccionTexto': _selectedLocation?.description ?? _ubicacionController.text.trim() ?? '',
           });
 
           // Show success message
@@ -764,13 +826,16 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
                 Padding(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8.0, vertical: 10.0),
-                  child: TextField(
+                  child: LocationAutocompleteField(
                     controller: _ubicacionController,
-                    decoration: InputDecoration(
-                      labelText: 'Ubicación (Latitud, Longitud)',
-                      hintText: 'Ejemplo: 39.494909, -0.684287',
-                      helperText: 'Formato: latitud, longitud',
-                    ),
+                    country: 'es',
+                    helperText:
+                        'Escribe para ver sugerencias y guarda con una selección',
+                    onLocationSelected: (location) {
+                      setState(() {
+                        _selectedLocation = location;
+                      });
+                    },
                   ),
                 ),
                 Padding(
@@ -778,10 +843,14 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
                       horizontal: 8.0, vertical: 10.0),
                   child: TextField(
                     controller: _descripcionController,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 17.0,
                     ),
-                    decoration: InputDecoration(labelText: 'Descripción'),
+                    decoration: const InputDecoration(labelText: 'Descripción'),
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
+                    minLines: 3,
+                    maxLines: 6,
                   ),
                 ),
 

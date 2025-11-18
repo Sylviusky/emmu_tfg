@@ -26,6 +26,7 @@ class _Configuracion extends State<Configuracion> {
   List<InstrumentPair> _instrumentos = [InstrumentPair()];
 
   String _userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+  String? _userEmail;
   bool _isLoading = true;
   bool _isSaving = false;
   String? _profilePictureUrl;
@@ -75,6 +76,7 @@ class _Configuracion extends State<Configuracion> {
           _nombreController.text = data['Nombre'].toString();
           _apellidosController.text = data['Apellido'].toString();
           _telefonoController.text = data['Telefono']?.toString() ?? '';
+          _userEmail = data['email']?.toString() ?? FirebaseAuth.instance.currentUser?.email ?? 'No disponible';
           _soyMusico = data['SoyMusico'] ?? false;
           _profilePictureUrl = data['Foto']?.toString();
           
@@ -417,6 +419,18 @@ class _Configuracion extends State<Configuracion> {
                 ],
               ),
             ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.email, color: Colors.red),
+                const SizedBox(width: 8.0),
+                Text(
+                  _userEmail ?? FirebaseAuth.instance.currentUser?.email ?? 'Correo no disponible',
+                  style: const TextStyle(fontSize: 16.0, color: Colors.black87),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16.0),
             // Nombre field
             TextFormField(
               controller: _nombreController,

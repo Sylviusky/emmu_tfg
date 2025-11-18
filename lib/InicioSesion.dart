@@ -4,6 +4,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'Registro.dart';
+import 'ResetPassword.dart';
 
 class InicioSesion extends StatefulWidget {
   const InicioSesion({super.key});
@@ -109,6 +110,19 @@ class _InicioSesion extends State<InicioSesion> {
                           ),
                           const Text('Mostrar contraseña'),
                         ],
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const ResetPassword()),
+                          );
+                        },
+                        child: const Text(
+                          '¿Has olvidado tu contraseña?',
+                          style: TextStyle(color: Colors.red),
+                        ),
                       ),
                       _mostrarError
                           ? Padding(

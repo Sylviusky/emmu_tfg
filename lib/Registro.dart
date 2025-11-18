@@ -39,8 +39,9 @@ Future<UserCredential?> registroUsuario(String email, String password, String no
     String uid = userCredential.user!.uid;
 
     // Create user document in Firestore with UID as document ID
+    final normalizedEmail = email.toLowerCase();
     Map<String, dynamic> userData = {
-      'email': email,
+      'email': normalizedEmail,
       'Nombre': nombre,
       'Apellido': apellido,
       'Telefono': telf.isEmpty ? '' : telf,
@@ -498,7 +499,7 @@ class _RegistroState extends State<Registro> {
                                       // Save email to SharedPreferences
                                       SharedPreferences prefs =
                                           await SharedPreferences.getInstance();
-                                      await prefs.setString('userEmail', email);
+                                      await prefs.setString('userEmail', email.toLowerCase());
 
                                       // Clear form fields
                                       _nombreController.clear();

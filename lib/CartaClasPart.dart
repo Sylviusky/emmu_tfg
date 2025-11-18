@@ -87,8 +87,8 @@ class _CartaClasPartState extends State<CartaClasPart> {
   Future<void> _loadUserEmail() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      _userEmail = prefs.getString('userEmail') ?? '';
-      _isEditable = _userEmail == widget.idUsuario;
+      _userEmail = (prefs.getString('userEmail') ?? '').toLowerCase();
+      _isEditable = _userEmail == widget.idUsuario.toLowerCase();
     });
   }
 
@@ -417,7 +417,7 @@ class _CartaClasPartEditState extends State<CartaClasPartEdit> {
           'HorasDisp': horasDisp,
           'Negociable': _negociable,
           'Coste': coste,
-          'IdUsuario': widget.idUsuario,
+          'IdUsuario': widget.idUsuario.toLowerCase(),
         });
 
         // Show success message
@@ -576,7 +576,6 @@ class _CartaClasPartEditState extends State<CartaClasPartEdit> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 8.0),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Checkbox(
                               value: _negociable,
@@ -586,7 +585,15 @@ class _CartaClasPartEditState extends State<CartaClasPartEdit> {
                                 });
                               },
                             ),
-                            Flexible(child: const Text('Negociable')),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                'Negociable',
+                                style: const TextStyle(fontSize: 16),
+                                overflow: TextOverflow.visible,
+                                softWrap: true,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -612,11 +619,14 @@ class _CartaClasPartEditState extends State<CartaClasPartEdit> {
                       horizontal: 8.0, vertical: 10.0),
                   child: TextField(
                     controller: _descripcionController,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 17.0,
                     ),
-                    decoration: InputDecoration(labelText: 'Descripción'),
-                    maxLines: 3,
+                    decoration: const InputDecoration(labelText: 'Descripción'),
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
+                    minLines: 3,
+                    maxLines: 6,
                   ),
                 ),
                 Padding(

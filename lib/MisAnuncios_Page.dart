@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'CajonAppBar.dart';
 import 'CartaEvento.dart';
 import 'CartaClasPart.dart';
+import 'utils/geo_point_parser.dart';
 
 class MisAnuncios extends StatefulWidget {
   const MisAnuncios({super.key});
@@ -25,7 +26,8 @@ class _MisAnunciosState extends State<MisAnuncios> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     if (mounted) {
       setState(() {
-        _userEmail = prefs.getString('userEmail');
+        final email = prefs.getString('userEmail');
+        _userEmail = email != null ? email.toLowerCase() : null;
       });
     }
   }
@@ -103,10 +105,8 @@ class _MisAnunciosState extends State<MisAnuncios> {
                       }
 
                       return StreamBuilder<QuerySnapshot>(
-                        //FILTRA LOS EVENTOS QUE HA CREADO EL USUARIO QUE INICIA SESION
-                        stream: eventos
-                            .where('IdUsuario', isEqualTo: _userEmail)
-                            .snapshots(),
+                        //CARGA TODOS LOS EVENTOS Y FILTRAMOS EN EL CLIENTE PARA MANEJAR MAYUSCULAS/MINUSCULAS
+                        stream: eventos.snapshots(),
                         builder: (BuildContext context,
                             AsyncSnapshot<QuerySnapshot> snapshot) {
                           if (snapshot.hasError) {
@@ -115,15 +115,23 @@ class _MisAnunciosState extends State<MisAnuncios> {
                           }
 
                           if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
+                              ConnectionState.waiting || !snapshot.hasData) {
                             return Center(
                                 child: CircularProgressIndicator());
                           }
 
-                          final data = snapshot.requireData;
+                          final allData = snapshot.data!;
+                          // Filtrar en el cliente normalizando emails para manejar mayúsculas/minúsculas
+                          final filteredDocs = allData.docs.where((doc) {
+                            final docIdUsuario = doc['IdUsuario']?.toString().toLowerCase() ?? '';
+                            return docIdUsuario == _userEmail?.toLowerCase();
+                          }).toList();
+                          
+                          final data = filteredDocs;
 
-                          return ListView.builder(
-                            itemCount: data.size + 1, // +1 for header
+                          return ListView.separated(
+                            itemCount: data.length + 1, // +1 for header
+                            separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.black12),
                             itemBuilder: (context, index) {
                               // First item is always the header
                               if (index == 0) {
@@ -160,29 +168,19 @@ class _MisAnunciosState extends State<MisAnuncios> {
                               }
 
                               // Other items are event documents
-                              var evento = data.docs[index - 1];
-                              return ListTile(
-                                title: Column(
-                                  crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                                  children: [
-                                    Text(evento['Titulo']),
-                                    SizedBox(height: 8.0),
-                                    Text(evento['Descripcion']),
-                                  ],
-                                ),
-                                trailing: Container(
-                                  width: 200,
-                                  alignment: Alignment.centerRight,
-                                  child: Text(
-                                    '${evento['Presupuesto']} €',
-                                    style: TextStyle(
-                                        color: Colors.red,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 25),
-                                  ),
-                                ),
+                              var evento = data[index - 1];
+                              return InkWell(
                                 onTap: () async {
+                                  final ubicacion = parseDynamicToGeoPoint(evento['Ubicacion']);
+                                  if (ubicacion == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Este evento no tiene una ubicación válida guardada.'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    return;
+                                  }
                                   final result = await Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -192,24 +190,72 @@ class _MisAnunciosState extends State<MisAnuncios> {
                                         apellido: userData['Apellido'],
                                         titulo: evento['Titulo'],
                                         descripcion: evento['Descripcion'],
-                                        ubicacion: evento['Ubicacion'],
+                                        ubicacion: ubicacion,
                                         fecha: evento['Fecha'],
-                                        tienePresupuesto:
-                                        evento['TienePresupuesto'],
+                                        tienePresupuesto: evento['TienePresupuesto'],
                                         presupuesto: evento['Presupuesto'],
                                         idUsuario: userData['email'],
                                         docId: evento['docId'].toString(),
-                                        onChatPressed: () {
-                                          // Aquí puedes agregar la lógica para navegar a la página de chat
-                                        },
+                                        direccionTexto: evento['DireccionTexto'],
+                                        onChatPressed: () {},
                                       ),
                                     ),
                                   );
-                                  // Si el resultado es 'true', refresca el estado
                                   if (result == true) {
                                     setState(() {});
                                   }
                                 },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              evento['Titulo'],
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              evento['Descripcion'],
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                color: Colors.black87,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        width: 140,
+                                        alignment: Alignment.centerRight,
+                                        child: Text(
+                                          evento['TienePresupuesto'] == true 
+                                              ? '${evento['Presupuesto']} €'
+                                              : 'Sin presup.',
+                                          textAlign: TextAlign.right,
+                                          style: const TextStyle(
+                                            color: Colors.red,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 22,
+                                          ),
+                                        ),
+                                      )
+                                    ],
+                                  ),
+                                ),
                               );
                             },
                           );
@@ -245,10 +291,8 @@ class _MisAnunciosState extends State<MisAnuncios> {
                       }
 
                       return StreamBuilder<QuerySnapshot>(
-                        //FILTRA LAS CLASES QUE HA CREADO EL USUARIO QUE INICIA SESION
-                        stream: clasPart
-                            .where('IdUsuario', isEqualTo: _userEmail)
-                            .snapshots(),
+                        //CARGA TODAS LAS CLASES Y FILTRAMOS EN EL CLIENTE PARA MANEJAR MAYUSCULAS/MINUSCULAS
+                        stream: clasPart.snapshots(),
                         builder: (BuildContext context,
                             AsyncSnapshot<QuerySnapshot> snapshot) {
                           if (snapshot.hasError) {
@@ -257,15 +301,23 @@ class _MisAnunciosState extends State<MisAnuncios> {
                           }
 
                           if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
+                              ConnectionState.waiting || !snapshot.hasData) {
                             return Center(
                                 child: CircularProgressIndicator());
                           }
 
-                          final data = snapshot.requireData;
+                          final allData = snapshot.data!;
+                          // Filtrar en el cliente normalizando emails para manejar mayúsculas/minúsculas
+                          final filteredDocs = allData.docs.where((doc) {
+                            final docIdUsuario = doc['IdUsuario']?.toString().toLowerCase() ?? '';
+                            return docIdUsuario == _userEmail?.toLowerCase();
+                          }).toList();
+                          
+                          final data = filteredDocs;
 
-                          return ListView.builder(
-                            itemCount: data.size + 1, // +1 for header
+                          return ListView.separated(
+                            itemCount: data.length + 1, // +1 for header
+                            separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.black12),
                             itemBuilder: (context, index) {
                               // First item is always the header
                               if (index == 0) {
@@ -300,28 +352,8 @@ class _MisAnunciosState extends State<MisAnuncios> {
                               }
 
                               // Other items are class documents
-                              var clasPartDoc = data.docs[index - 1];
-                              return ListTile(
-                                title: Column(
-                                  crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                                  children: [
-                                    Text(clasPartDoc['Titulo']),
-                                    SizedBox(height: 8.0),
-                                    Text(clasPartDoc['Descripcion']),
-                                  ],
-                                ),
-                                trailing: Container(
-                                  width: 200,
-                                  alignment: Alignment.centerRight,
-                                  child: Text(
-                                    '${clasPartDoc['Coste']} €',
-                                    style: TextStyle(
-                                        color: Colors.red,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 25),
-                                  ),
-                                ),
+                              var clasPartDoc = data[index - 1];
+                              return InkWell(
                                 onTap: () async {
                                   final result = await Navigator.push(
                                     context,
@@ -331,26 +363,69 @@ class _MisAnunciosState extends State<MisAnuncios> {
                                         nombre: userData['Nombre'],
                                         apellido: userData['Apellido'],
                                         titulo: clasPartDoc['Titulo'],
-                                        descripcion:
-                                        clasPartDoc['Descripcion'],
+                                        descripcion: clasPartDoc['Descripcion'],
                                         horasDisp: clasPartDoc['HorasDisp'],
-                                        negociable:
-                                        clasPartDoc['Negociable'],
+                                        negociable: clasPartDoc['Negociable'],
                                         coste: clasPartDoc['Coste'],
                                         idUsuario: userData['email'],
                                         id: clasPartDoc['id'].toString(),
-                                        onChatPressed: () {
-                                          // Aquí puedes agregar la lógica para navegar a la página de chat
-                                        },
+                                        onChatPressed: () {},
                                       ),
                                     ),
                                   );
-
-                                  // Si el resultado es 'true', refresca el estado
                                   if (result == true) {
                                     setState(() {});
                                   }
                                 },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              clasPartDoc['Titulo'],
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              clasPartDoc['Descripcion'],
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                color: Colors.black87,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        width: 140,
+                                        alignment: Alignment.centerRight,
+                                        child: Text(
+                                          '${clasPartDoc['Coste']} €',
+                                          textAlign: TextAlign.right,
+                                          style: const TextStyle(
+                                            color: Colors.red,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 25,
+                                          ),
+                                        ),
+                                      )
+                                    ],
+                                  ),
+                                ),
                               );
                             },
                           );

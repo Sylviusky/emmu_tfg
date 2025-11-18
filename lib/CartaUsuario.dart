@@ -103,11 +103,6 @@ class _CartaUsuarioState extends State<CartaUsuario> {
                       '$nombre $apellido',
                       style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 4.0),
-                    Text(
-                      widget.idUsuario,
-                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                    ),
                     const SizedBox(height: 24.0),
                   ],
                 ),
@@ -122,16 +117,6 @@ class _CartaUsuarioState extends State<CartaUsuario> {
               _buildInfoRow(
                   label: 'Teléfono', value: telefono, icon: Icons.phone),
               const SizedBox(height: 24.0),
-              CheckboxListTile(
-                title: const Text(
-                  'Es músico',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                value: soyMusico,
-                onChanged: null,
-                controlAffinity: ListTileControlAffinity.leading,
-              ),
-              const SizedBox(height: 16.0),
               if (soyMusico && instrumentosData.isNotEmpty)
                 ...List.generate(instrumentosData.length, (index) {
                   final instrumento = instrumentosData[index]['instrumento'] ?? '';
@@ -169,7 +154,7 @@ class _CartaUsuarioState extends State<CartaUsuario> {
                     ),
                   );
                 })
-              else
+              else if (soyMusico)
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),

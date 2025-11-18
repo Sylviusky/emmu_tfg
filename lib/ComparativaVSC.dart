@@ -13,6 +13,7 @@ class CartaEvento extends StatefulWidget {
   final bool tienePresupuesto;
   final double presupuesto;
   final VoidCallback onChatPressed;
+  final String? direccionTexto;
 
   const CartaEvento({
     super.key,
@@ -27,6 +28,7 @@ class CartaEvento extends StatefulWidget {
     required this.tienePresupuesto,
     required this.presupuesto,
     required this.onChatPressed,
+    this.direccionTexto,
   });
 
   @override
