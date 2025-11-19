@@ -336,6 +336,7 @@ class _RegistroState extends State<Registro> {
                                   ),
                                   TextFormField(
                                     controller: _telfController,
+                                    keyboardType: TextInputType.phone,
                                     decoration: InputDecoration(
                                       labelText: 'Teléfono',
                                       labelStyle: TextStyle(
@@ -349,10 +350,19 @@ class _RegistroState extends State<Registro> {
                                         borderSide: BorderSide(
                                             color: Colors.red.shade100),
                                       ),
-                                      hintText: 'Introduce tu teléfono',
+                                      hintText: 'Ej: 612345678',
                                     ),
                                     onChanged: (value) {
                                       telf = value;
+                                    },
+                                    validator: (String? value) {
+                                      if (value != null && value.trim().isNotEmpty) {
+                                        // Check if it contains only numbers
+                                        if (!RegExp(r'^[0-9]+$').hasMatch(value.trim())) {
+                                          return 'El teléfono solo puede contener números';
+                                        }
+                                      }
+                                      return null;
                                     },
                                   ),
                                   const Padding(
