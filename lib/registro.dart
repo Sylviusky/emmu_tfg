@@ -152,18 +152,36 @@ class _RegistroState extends State<Registro> {
     //final GlobalKey<FormState> _formKeyReg = GlobalKey<FormState>();
 
     return
-      //WillPopScope(
-      //onWillPop: () async => false,
-      //child:
       Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.red,
-        ),
-        body: SizedBox(
+        body: SafeArea(
+          child: SizedBox(
           width: MediaQuery.of(context).size.width, // added
           child: SingleChildScrollView(
             child: Column(
               children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 16.0, left: 16.0),
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 20.0),
                 ),
@@ -533,7 +551,7 @@ class _RegistroState extends State<Registro> {
             ),
           ),
         ),
-      //),
+      ),
     );
   }
 }

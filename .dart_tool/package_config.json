@@ -99,9 +99,9 @@
     },
     {
       "name": "cross_file",
-      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/cross_file-0.3.5",
+      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/cross_file-0.3.5+1",
       "packageUri": "lib/",
-      "languageVersion": "3.7"
+      "languageVersion": "3.8"
     },
     {
       "name": "crypto",
@@ -621,15 +621,15 @@
     },
     {
       "name": "image_picker_android",
-      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/image_picker_android-0.8.13+8",
+      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/image_picker_android-0.8.13+9",
       "packageUri": "lib/",
       "languageVersion": "3.9"
     },
     {
       "name": "image_picker_for_web",
-      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/image_picker_for_web-3.1.0",
+      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/image_picker_for_web-3.1.1",
       "packageUri": "lib/",
-      "languageVersion": "3.6"
+      "languageVersion": "3.8"
     },
     {
       "name": "image_picker_ios",
@@ -933,7 +933,7 @@
     },
     {
       "name": "url_launcher_android",
-      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher_android-6.3.25",
+      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher_android-6.3.26",
       "packageUri": "lib/",
       "languageVersion": "3.9"
     },

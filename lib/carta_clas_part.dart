@@ -349,10 +349,12 @@ class _CartaClasPartEditState extends State<CartaClasPartEdit> {
   late TextEditingController _horasDispController;
   late TextEditingController _costeController;
   late bool _negociable;
+  late final bool _isNewDocument;
 
   @override
   void initState() {
     super.initState();
+    _isNewDocument = widget.id == 'id' || widget.id.isEmpty;
     _tituloController = TextEditingController(text: widget.titulo);
     _descripcionController = TextEditingController(text: widget.descripcion);
     _horasDispController =
@@ -360,6 +362,95 @@ class _CartaClasPartEditState extends State<CartaClasPartEdit> {
     _costeController =
         TextEditingController(text: widget.coste.toString());
     _negociable = widget.negociable;
+  }
+
+  Future<void> _showDeleteConfirmation() async {
+    if (!mounted) return;
+    
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Eliminar clase'),
+          content: const Text('¿Estás seguro de que quieres eliminar esta clase? Esta acción no se puede deshacer.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(
+                'CANCELAR',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(
+                'Eliminar anuncio',
+                style: TextStyle(color: Colors.black87),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == true && mounted) {
+      await _deleteClase();
+    }
+  }
+
+  Future<void> _deleteClase() async {
+    if (_isNewDocument) {
+      // Si es un documento nuevo, simplemente volver atrás
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+      return;
+    }
+
+    try {
+      // Buscar el documento por id
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('ClasPart')
+          .where('id', isEqualTo: widget.id)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        // Eliminar el documento
+        await querySnapshot.docs.first.reference.delete();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Clase eliminada exitosamente'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+
+          // Volver atrás y notificar que se eliminó
+          Navigator.of(context).pop(true);
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: No se encontró la clase a eliminar'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al eliminar la clase: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      print('Error deleting clase: $e');
+    }
   }
 
   Future<void> _updateClasPart() async {
@@ -536,6 +627,14 @@ class _CartaClasPartEditState extends State<CartaClasPartEdit> {
           style: TextStyle(fontSize: 25, color: Colors.white),
         ),
         iconTheme: IconThemeData(color: Colors.white),
+        actions: [
+          if (!_isNewDocument)
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.white),
+              onPressed: _showDeleteConfirmation,
+              tooltip: 'Eliminar clase',
+            ),
+        ],
       ),
       //drawer: Cajon(),
       body: SingleChildScrollView(

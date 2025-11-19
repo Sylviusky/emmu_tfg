@@ -496,6 +496,125 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
     }
   }
 
+  Widget _buildProfileAvatarForEdit() {
+    final foto = widget.foto.trim();
+    if (foto.isEmpty || foto == 'assets/default_user.jpg') {
+      return CircleAvatar(
+        backgroundImage: const AssetImage('assets/default_user.jpg'),
+        radius: 50,
+      );
+    }
+
+    if (foto.startsWith('http')) {
+      return CircleAvatar(
+        radius: 50,
+        backgroundColor: Colors.grey[300],
+        backgroundImage: NetworkImage(foto),
+        onBackgroundImageError: (exception, stackTrace) {
+          // Fallback to default image if network image fails
+        },
+      );
+    }
+
+    final assetPath = foto.contains('default_user')
+        ? 'assets/default_user.jpg'
+        : (foto.startsWith('assets/') ? foto : 'assets/default_user.jpg');
+
+    return CircleAvatar(
+      backgroundImage: AssetImage(assetPath),
+      radius: 50,
+    );
+  }
+
+  Future<void> _showDeleteConfirmation() async {
+    if (!mounted) return;
+    
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Eliminar evento'),
+          content: const Text('¿Estás seguro de que quieres eliminar este evento? Esta acción no se puede deshacer.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(
+                'CANCELAR',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(
+                'Eliminar anuncio',
+                style: TextStyle(color: Colors.black87),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == true && mounted) {
+      await _deleteEvento();
+    }
+  }
+
+  Future<void> _deleteEvento() async {
+    if (_isNewDocument) {
+      // Si es un documento nuevo, simplemente volver atrás
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+      return;
+    }
+
+    try {
+      // Buscar el documento por docId
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('Evento')
+          .where('docId', isEqualTo: widget.docId)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        // Eliminar el documento
+        await querySnapshot.docs.first.reference.delete();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Evento eliminado exitosamente'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+
+          // Volver atrás y notificar que se eliminó
+          Navigator.of(context).pop(true);
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: No se encontró el evento a eliminar'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al eliminar el evento: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      print('Error deleting evento: $e');
+    }
+  }
+
   Future<void> _updateEvento() async {
     try {
       // Show loading indicator
@@ -712,12 +831,19 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: Colors.red,
-
         title: Text(
           'Editar Evento',
           style: TextStyle(fontSize: 25, color: Colors.white),
         ),
         iconTheme: IconThemeData(color: Colors.white),
+        actions: [
+          if (!_isNewDocument)
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.white),
+              onPressed: _showDeleteConfirmation,
+              tooltip: 'Eliminar evento',
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(15.0),
@@ -729,10 +855,7 @@ class _CartaEventoEditState extends State<CartaEventoEdit> {
               children: [
                 Row(
                   children: [
-                    CircleAvatar(
-                      backgroundImage: AssetImage('assets/default_user.jpg'),
-                      radius: 50,
-                    ),
+                    _buildProfileAvatarForEdit(),
                     SizedBox(width: 20),
                     Expanded(
                       child:

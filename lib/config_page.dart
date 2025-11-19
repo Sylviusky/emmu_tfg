@@ -50,16 +50,43 @@ class _Configuracion extends State<Configuracion> {
     super.dispose();
   }
 
+  void _resetAllData() {
+    _nombreController.clear();
+    _apellidosController.clear();
+    _telefonoController.clear();
+    _profilePictureUrl = null;
+    _pickedImage = null;
+    _userEmail = null;
+    _soyMusico = false;
+    _instrumentos = [InstrumentPair()];
+    _userId = '';
+  }
+
   Future<void> _loadUserData() async {
     try {
+      setState(() {
+        _isLoading = true;
+        _profilePictureUrl = null;
+        _pickedImage = null;
+      });
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
+        setState(() {
+          _resetAllData();
+          _isLoading = false;
+        });
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const InicioSesion()),
         );
         return;
       }
+
+      // Reset profile picture to avoid showing previous user's photo
+      setState(() {
+        _profilePictureUrl = null;
+        _pickedImage = null;
+      });
 
       _userId = user.uid;
 
@@ -82,9 +109,17 @@ class _Configuracion extends State<Configuracion> {
           _telefonoController.text = data['Telefono']?.toString() ?? '';
           _userEmail = data['email']?.toString() ?? FirebaseAuth.instance.currentUser?.email ?? 'No disponible';
           _soyMusico = data['SoyMusico'] ?? false;
-          _profilePictureUrl = data['Foto']?.toString();
-          
-          // Load instruments if they exist
+
+          // Get photo from Firestore, or use Google photo if available, or null (default)
+          final fotoFromFirestore = data['Foto']?.toString();
+          if (fotoFromFirestore != null && fotoFromFirestore.isNotEmpty && fotoFromFirestore != 'assets/default_user.jpg') {
+            _profilePictureUrl = fotoFromFirestore;
+          } else if (user.photoURL != null && user.photoURL!.isNotEmpty) {
+            _profilePictureUrl = user.photoURL;
+          } else {
+            _profilePictureUrl = null;
+          }
+
           if (data['Instrumentos'] != null && data['Instrumentos'] is List) {
             final instrumentsList = data['Instrumentos'] as List;
             _instrumentos = instrumentsList.map((item) {
@@ -96,13 +131,20 @@ class _Configuracion extends State<Configuracion> {
               }
               return InstrumentPair();
             }).toList();
-            
-            // Ensure at least one pair exists
+
             if (_instrumentos.isEmpty) {
               _instrumentos = [InstrumentPair()];
             }
+          } else {
+            _instrumentos = [InstrumentPair()];
           }
-          
+
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _resetAllData();
+          _userEmail = FirebaseAuth.instance.currentUser?.email ?? 'No disponible';
           _isLoading = false;
         });
       }
@@ -321,11 +363,11 @@ class _Configuracion extends State<Configuracion> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.red,
-          title: const Text('Mi Cuenta',
-              style: TextStyle(fontSize: 25, color: Colors.white)),
-          iconTheme: const IconThemeData(color: Colors.white),
+      appBar: AppBar(
+        backgroundColor: Colors.red,
+        title: const Text('Mi Cuenta',
+            style: TextStyle(fontSize: 25, color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
         ),
         drawer: Cajon(),
         body: const Center(child: CircularProgressIndicator()),
@@ -341,6 +383,10 @@ class _Configuracion extends State<Configuracion> {
         actions: [
           TextButton(
             onPressed: () async {
+              setState(() {
+                _resetAllData();
+                _isLoading = false;
+              });
               await FirebaseAuth.instance.signOut();
               SharedPreferences prefs =
                   await SharedPreferences.getInstance();
