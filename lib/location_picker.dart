@@ -69,7 +69,7 @@ class PlaceAutocompleteService {
     String input, {
     required String sessionToken,
     String language = 'es',
-    String types = 'geocode',
+    String? types,
     String? components,
     http.Client? client,
   }) async {
@@ -88,7 +88,7 @@ class PlaceAutocompleteService {
         language: language,
         extra: {
           'input': input,
-          'types': types,
+          if (types != null) 'types': types,
           if (components != null) 'components': components,
         },
       ),
@@ -209,6 +209,7 @@ class LocationPicker {
           input,
           sessionToken: sessionToken,
           components: componentsFilter,
+          types: null, // No limitar por tipos para búsqueda flexible
         );
         setState(() {
           predictions = results;
@@ -386,7 +387,7 @@ class _LocationAutocompleteFieldState extends State<LocationAutocompleteField> {
                 sessionToken: _sessionToken,
                 components:
                     widget.country != null ? 'country:${widget.country}' : null,
-                types: 'address',
+                types: null, // No limitar por tipos para búsqueda flexible (direcciones, negocios, lugares, etc.)
               );
             } catch (e) {
               if (!mounted) return [];
