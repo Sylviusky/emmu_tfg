@@ -360,26 +360,30 @@ class _LocationAutocompleteFieldState extends State<LocationAutocompleteField> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TypeAheadField<PlacePrediction>(
+          controller: widget.controller,
           hideOnEmpty: true,
           debounceDuration: const Duration(milliseconds: 300),
-          textFieldConfiguration: TextFieldConfiguration(
-            controller: widget.controller,
-            decoration: InputDecoration(
-              labelText: widget.label ?? 'Ubicación',
-              helperText: widget.helperText ??
-                  'Escribe una dirección o lugar para ver sugerencias',
-              suffixIcon: _isFetchingDetails
-                  ? const Padding(
-                      padding: EdgeInsets.all(12.0),
-                      child: SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : const Icon(Icons.place, color: Colors.red),
-            ),
-          ),
+          builder: (context, controller, focusNode) {
+            return TextField(
+              controller: controller,
+              focusNode: focusNode,
+              decoration: InputDecoration(
+                labelText: widget.label ?? 'Ubicación',
+                helperText: widget.helperText ??
+                    'Escribe una dirección o lugar para ver sugerencias',
+                suffixIcon: _isFetchingDetails
+                    ? const Padding(
+                        padding: EdgeInsets.all(12.0),
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : const Icon(Icons.place, color: Colors.red),
+              ),
+            );
+          },
           suggestionsCallback: (pattern) async {
             try {
               return await PlaceAutocompleteService.fetchPredictions(
@@ -408,7 +412,7 @@ class _LocationAutocompleteFieldState extends State<LocationAutocompleteField> {
               title: Text(prediction.description),
             );
           },
-          onSuggestionSelected: (prediction) async {
+          onSelected: (prediction) async {
             setState(() => _isFetchingDetails = true);
             try {
               final details = await PlaceAutocompleteService.fetchPlaceDetails(
@@ -441,7 +445,7 @@ class _LocationAutocompleteFieldState extends State<LocationAutocompleteField> {
               _resetSessionToken();
             }
           },
-          noItemsFoundBuilder: (context) => const Padding(
+          emptyBuilder: (context) => const Padding(
             padding: EdgeInsets.all(12.0),
             child: Text('No se encontraron coincidencias'),
           ),

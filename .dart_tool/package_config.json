@@ -459,7 +459,7 @@
     },
     {
       "name": "flutter_keyboard_visibility",
-      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_keyboard_visibility-5.4.1",
+      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_keyboard_visibility-6.0.0",
       "packageUri": "lib/",
       "languageVersion": "2.12"
     },
@@ -531,9 +531,9 @@
     },
     {
       "name": "flutter_typeahead",
-      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_typeahead-4.8.0",
+      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_typeahead-5.2.0",
       "packageUri": "lib/",
-      "languageVersion": "2.19"
+      "languageVersion": "3.0"
     },
     {
       "name": "flutter_web_plugins",
@@ -807,9 +807,27 @@
     },
     {
       "name": "pointer_interceptor",
-      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/pointer_interceptor-0.9.3+7",
+      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/pointer_interceptor-0.10.1+2",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
+    },
+    {
+      "name": "pointer_interceptor_ios",
+      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/pointer_interceptor_ios-0.10.1+1",
+      "packageUri": "lib/",
+      "languageVersion": "3.9"
+    },
+    {
+      "name": "pointer_interceptor_platform_interface",
+      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/pointer_interceptor_platform_interface-0.10.0+1",
       "packageUri": "lib/",
       "languageVersion": "3.1"
+    },
+    {
+      "name": "pointer_interceptor_web",
+      "rootUri": "file:///C:/Users/scortes/AppData/Local/Pub/Cache/hosted/pub.dev/pointer_interceptor_web-0.10.3",
+      "packageUri": "lib/",
+      "languageVersion": "3.6"
     },
     {
       "name": "posix",

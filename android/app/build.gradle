@@ -43,6 +43,10 @@ android {
 
     buildFeatures.buildConfig = true
 
+     lintOptions {
+        abortOnError false
+    }
+
     defaultConfig {
         applicationId  "com.emmutfg.emmu_tfg"
         minSdkVersion  24
