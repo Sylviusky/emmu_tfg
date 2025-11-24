@@ -1,0 +1,158 @@
+Resolving dependencies...
+Downloading packages...
+  _flutterfire_internals 1.3.59 (1.3.64 available)
+  characters 1.4.0 (1.4.1 available)
+  cloud_firestore 5.6.12 (6.1.0 available)
+  cloud_firestore_platform_interface 6.6.12 (7.0.4 available)
+  cloud_firestore_web 4.4.12 (5.1.0 available)
+  cloud_functions 5.6.2 (6.0.4 available)
+  cloud_functions_platform_interface 5.8.2 (5.8.7 available)
+  cloud_functions_web 4.11.5 (5.1.0 available)
+  email_validator 2.1.17 (3.0.0 available)
+  firebase_analytics 11.6.0 (12.0.4 available)
+  firebase_analytics_platform_interface 4.4.3 (5.0.4 available)
+  firebase_analytics_web 0.5.10+16 (0.6.1 available)
+  firebase_app_check 0.3.2+10 (0.4.1+2 available)
+  firebase_app_check_platform_interface 0.1.1+10 (0.2.1+2 available)
+  firebase_app_check_web 0.2.0+14 (0.2.2 available)
+  firebase_app_installations 0.3.3 (0.4.0+4 available)
+  firebase_app_installations_platform_interface 0.1.4+58 (0.1.4+63 available)
+  firebase_app_installations_web 0.1.6+16 (0.1.7 available)
+  firebase_auth 5.7.0 (6.1.2 available)
+  firebase_auth_platform_interface 7.7.3 (8.1.4 available)
+  firebase_auth_web 5.15.3 (6.1.0 available)
+  firebase_core 3.15.2 (4.2.1 available)
+  firebase_core_web 2.24.1 (3.3.0 available)
+  firebase_crashlytics 4.3.10 (5.0.5 available)
+  firebase_crashlytics_platform_interface 3.8.10 (3.8.15 available)
+  firebase_database 11.3.10 (12.1.0 available)
+  firebase_database_platform_interface 0.2.6+10 (0.3.0 available)
+  firebase_database_web 0.2.6+16 (0.2.7+1 available)
+  firebase_dynamic_links 6.1.10 (discontinued)
+  firebase_in_app_messaging 0.8.1+10 (0.9.0+4 available)
+  firebase_in_app_messaging_platform_interface 0.2.5+10 (0.2.5+15 available)
+  firebase_messaging 15.2.10 (16.0.4 available)
+  firebase_messaging_platform_interface 4.6.10 (4.7.4 available)
+  firebase_messaging_web 3.10.10 (4.1.0 available)
+  firebase_ml_model_downloader 0.3.3+8 (0.4.0+4 available)
+  firebase_ml_model_downloader_platform_interface 0.1.5+10 (0.1.5+15 available)
+  firebase_performance 0.10.1+10 (0.11.1+2 available)
+  firebase_performance_platform_interface 0.1.5+10 (0.1.6+2 available)
+  firebase_performance_web 0.1.7+16 (0.1.8 available)
+  firebase_remote_config 5.5.0 (6.1.2 available)
+  firebase_remote_config_platform_interface 2.0.0 (2.0.5 available)
+  firebase_remote_config_web 1.8.9 (1.10.1 available)
+  firebase_storage 12.4.10 (13.0.4 available)
+  firebase_storage_platform_interface 5.2.10 (5.2.15 available)
+  firebase_storage_web 3.10.17 (3.11.0 available)
+  firebase_ui_auth 1.17.0 (3.0.1 available)
+  firebase_ui_database 1.5.3 (2.0.1 available)
+  firebase_ui_firestore 1.7.3 (2.0.1 available)
+  firebase_ui_localizations 1.14.1 (2.0.1 available)
+  firebase_ui_oauth 1.7.0 (2.0.1 available)
+  firebase_ui_oauth_google 1.4.2 (2.0.1 available)
+  flutter_lints 5.0.0 (6.0.0 available)
+  google_sign_in 6.3.0 (7.2.0 available)
+  google_sign_in_android 6.2.1 (7.2.5 available)
+  google_sign_in_ios 5.9.0 (6.2.4 available)
+  google_sign_in_platform_interface 2.5.0 (3.1.0 available)
+  google_sign_in_web 0.12.4+4 (1.1.0 available)
+  lints 5.1.1 (6.0.0 available)
+  material_color_utilities 0.11.1 (0.13.0 available)
+  test_api 0.7.7 (0.7.8 available)
+  url_launcher_android 6.3.26 (6.3.27 available)
+Got dependencies!
+1 package is discontinued.
+60 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Analyzing emmu_tfg...                                           
+
+   info - Don't invoke 'print' in production code - lib\auth_gate.dart:18:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\auth_gate.dart:55:7 - avoid_print
+warning - Unnecessary cast - lib\auth_gate.dart:58:28 - unnecessary_cast
+   info - Don't invoke 'print' in production code - lib\auth_gate.dart:64:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\auth_gate.dart:68:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\auth_gate.dart:77:5 - avoid_print
+   info - Don't use 'BuildContext's across async gaps - lib\auth_gate.dart:144:38 - use_build_context_synchronously
+   info - Invalid use of a private type in a public API - lib\cajon_app_bar.dart:13:3 - library_private_types_in_public_api
+   info - Invalid use of a private type in a public API - lib\carta_clas_part.dart:40:3 - library_private_types_in_public_api
+   info - Don't invoke 'print' in production code - lib\carta_clas_part.dart:156:7 - avoid_print
+   info - Invalid use of a private type in a public API - lib\carta_clas_part.dart:329:3 - library_private_types_in_public_api
+   info - Don't invoke 'print' in production code - lib\carta_clas_part.dart:452:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\carta_clas_part.dart:612:7 - avoid_print
+   info - Invalid use of a private type in a public API - lib\carta_evento.dart:44:3 - library_private_types_in_public_api
+   info - Don't invoke 'print' in production code - lib\carta_evento.dart:78:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\carta_evento.dart:233:7 - avoid_print
+   info - Invalid use of a private type in a public API - lib\carta_evento.dart:457:3 - library_private_types_in_public_api
+   info - Don't invoke 'print' in production code - lib\carta_evento.dart:614:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\carta_evento.dart:789:7 - avoid_print
+   info - Invalid use of a private type in a public API - lib\carta_noticia.dart:31:3 - library_private_types_in_public_api
+   info - Don't invoke 'print' in production code - lib\config_page.dart:155:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\config_page.dart:357:7 - avoid_print
+   info - Invalid use of a private type in a public API - lib\eventos_page.dart:12:3 - library_private_types_in_public_api
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:22:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:27:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:31:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:37:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:41:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:45:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:51:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:57:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:69:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:71:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:73:7 - avoid_print
+warning - Unnecessary cast - lib\inicio_sesion.dart:75:28 - unnecessary_cast
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:81:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:85:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:91:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:94:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:96:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:97:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:98:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:99:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:240:33 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:262:37 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:266:33 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:369:39 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:385:41 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:390:41 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:394:39 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:399:41 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:407:39 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:410:39 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:414:41 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:424:39 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:433:39 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:438:41 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:439:41 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:443:41 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:446:43 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:448:43 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:449:43 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:459:41 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:465:41 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:474:39 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:475:39 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:476:39 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:477:39 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:478:39 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:496:39 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:497:39 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:498:39 - avoid_print
+   info - Don't invoke 'print' in production code - lib\inicio_sesion.dart:499:39 - avoid_print
+   info - Don't invoke 'print' in production code - lib\main.dart:39:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\main.dart:76:7 - avoid_print
+warning - Unnecessary cast - lib\main.dart:79:28 - unnecessary_cast
+   info - Don't invoke 'print' in production code - lib\main.dart:85:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\main.dart:89:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\main.dart:98:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\main.dart:110:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\main.dart:112:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\main.dart:119:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\main.dart:121:5 - avoid_print
+   info - Don't use 'BuildContext's across async gaps - lib\main.dart:229:36 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\main.dart:231:13 - use_build_context_synchronously
+   info - Invalid use of a private type in a public API - lib\noticias_page.dart:10:3 - library_private_types_in_public_api
+   info - Don't invoke 'print' in production code - lib\registro.dart:143:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\registro.dart:500:43 - avoid_print
+

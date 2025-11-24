@@ -5,26 +5,22 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:emmu_tfg/utils/geo_point_parser.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:emmu_tfg/main.dart';
-
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(MyApp());
+  test('Convierte mapa válido en GeoPoint', () {
+    final result = parseDynamicToGeoPoint({'lat': 40.4, 'lng': -3.7});
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(result, isA<GeoPoint>());
+    expect(result?.latitude, 40.4);
+    expect(result?.longitude, -3.7);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  test('Devuelve null con datos incompletos', () {
+    final result = parseDynamicToGeoPoint({'lat': 40.4});
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(result, isNull);
   });
 }

@@ -69,8 +69,9 @@ class PlaceAutocompleteService {
     String input, {
     required String sessionToken,
     String language = 'es',
-    String types = 'geocode',
+    String? types,
     String? components,
+    http.Client? client,
   }) async {
     if (!isGoogleMapsApiKeyConfigured) {
       throw Exception(
@@ -87,13 +88,21 @@ class PlaceAutocompleteService {
         language: language,
         extra: {
           'input': input,
-          'types': types,
+          if (types != null) 'types': types,
           if (components != null) 'components': components,
         },
       ),
     );
 
-    final response = await http.get(uri);
+    final http.Client httpClient = client ?? http.Client();
+    http.Response response;
+    try {
+      response = await httpClient.get(uri);
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
     final data = json.decode(response.body) as Map<String, dynamic>;
     final status = data['status'] as String? ?? 'ERROR';
 
@@ -112,6 +121,7 @@ class PlaceAutocompleteService {
     String placeId, {
     required String sessionToken,
     String language = 'es',
+    http.Client? client,
   }) async {
     if (!isGoogleMapsApiKeyConfigured) {
       throw Exception(
@@ -131,7 +141,15 @@ class PlaceAutocompleteService {
       ),
     );
 
-    final response = await http.get(uri);
+    final http.Client httpClient = client ?? http.Client();
+    http.Response response;
+    try {
+      response = await httpClient.get(uri);
+    } finally {
+      if (client == null) {
+        httpClient.close();
+      }
+    }
     final data = json.decode(response.body) as Map<String, dynamic>;
     final status = data['status'] as String? ?? 'ERROR';
     if (status != 'OK') {
@@ -162,6 +180,7 @@ class LocationPicker {
     String? componentsFilter,
   }) async {
     final TextEditingController controller = TextEditingController();
+    final navigator = Navigator.of(context);
     SelectedLocation? selectedLocation;
     List<PlacePrediction> predictions = [];
     bool isLoading = false;
@@ -190,6 +209,7 @@ class LocationPicker {
           input,
           sessionToken: sessionToken,
           components: componentsFilter,
+          types: null, // No limitar por tipos para búsqueda flexible
         );
         setState(() {
           predictions = results;
@@ -216,6 +236,7 @@ class LocationPicker {
           prediction.placeId,
           sessionToken: sessionToken,
         );
+        if (!navigator.mounted) return;
         selectedLocation = SelectedLocation(
           latitude: details.latitude,
           longitude: details.longitude,
@@ -223,7 +244,7 @@ class LocationPicker {
               ? details.description
               : prediction.description,
         );
-        Navigator.pop(context);
+        navigator.pop();
       } catch (e) {
         setState(() {
           error = e.toString();
@@ -334,30 +355,35 @@ class _LocationAutocompleteFieldState extends State<LocationAutocompleteField> {
 
   @override
   Widget build(BuildContext context) {
+    final messenger = ScaffoldMessenger.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TypeAheadField<PlacePrediction>(
+          controller: widget.controller,
           hideOnEmpty: true,
           debounceDuration: const Duration(milliseconds: 300),
-          textFieldConfiguration: TextFieldConfiguration(
-            controller: widget.controller,
-            decoration: InputDecoration(
-              labelText: widget.label ?? 'Ubicación',
-              helperText: widget.helperText ??
-                  'Escribe una dirección o lugar para ver sugerencias',
-              suffixIcon: _isFetchingDetails
-                  ? const Padding(
-                      padding: EdgeInsets.all(12.0),
-                      child: SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : const Icon(Icons.place, color: Colors.red),
-            ),
-          ),
+          builder: (context, controller, focusNode) {
+            return TextField(
+              controller: controller,
+              focusNode: focusNode,
+              decoration: InputDecoration(
+                labelText: widget.label ?? 'Ubicación',
+                helperText: widget.helperText ??
+                    'Escribe una dirección o lugar para ver sugerencias',
+                suffixIcon: _isFetchingDetails
+                    ? const Padding(
+                        padding: EdgeInsets.all(12.0),
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : const Icon(Icons.place, color: Colors.red),
+              ),
+            );
+          },
           suggestionsCallback: (pattern) async {
             try {
               return await PlaceAutocompleteService.fetchPredictions(
@@ -365,10 +391,11 @@ class _LocationAutocompleteFieldState extends State<LocationAutocompleteField> {
                 sessionToken: _sessionToken,
                 components:
                     widget.country != null ? 'country:${widget.country}' : null,
-                types: 'address',
+                types: null, // No limitar por tipos para búsqueda flexible (direcciones, negocios, lugares, etc.)
               );
             } catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
+              if (!mounted) return [];
+              messenger.showSnackBar(
                 SnackBar(
                   content: Text(
                     e.toString().replaceFirst('Exception: ', ''),
@@ -385,13 +412,14 @@ class _LocationAutocompleteFieldState extends State<LocationAutocompleteField> {
               title: Text(prediction.description),
             );
           },
-          onSuggestionSelected: (prediction) async {
+          onSelected: (prediction) async {
             setState(() => _isFetchingDetails = true);
             try {
               final details = await PlaceAutocompleteService.fetchPlaceDetails(
                 prediction.placeId,
                 sessionToken: _sessionToken,
               );
+              if (!mounted) return;
               widget.controller.text = details.description;
               widget.onLocationSelected?.call(
                 SelectedLocation(
@@ -401,7 +429,8 @@ class _LocationAutocompleteFieldState extends State<LocationAutocompleteField> {
                 ),
               );
             } catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
+              if (!mounted) return;
+              messenger.showSnackBar(
                 SnackBar(
                   content: Text(
                     e.toString().replaceFirst('Exception: ', ''),
@@ -416,7 +445,7 @@ class _LocationAutocompleteFieldState extends State<LocationAutocompleteField> {
               _resetSessionToken();
             }
           },
-          noItemsFoundBuilder: (context) => const Padding(
+          emptyBuilder: (context) => const Padding(
             padding: EdgeInsets.all(12.0),
             child: Text('No se encontraron coincidencias'),
           ),
