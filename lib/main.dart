@@ -122,6 +122,9 @@ Future<void> main() async {
     // Continue anyway - don't block the app
   }
 
+  // Configure EmailAuthProvider to use App Links instead of Dynamic Links
+  // With Android App Links configured in AndroidManifest.xml, Firebase Auth
+  // will automatically use App Links for email authentication
   FirebaseUIAuth.configureProviders([
     EmailAuthProvider(),
     GoogleProvider(
